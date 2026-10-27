@@ -4,7 +4,7 @@
 // rejoignent le coffre-fort de l'agent : ils ne lui seront plus redemandés.
 
 import { journaliser } from './db.mjs';
-import { ErreurMetier, aujourdhui } from './services.mjs';
+import { ErreurMetier, aujourdhui, notifier } from './services.mjs';
 import { hacher } from './motdepasse.mjs';
 import { normaliserTelephone, politiqueMotDePasse } from './auth.mjs';
 import { lireFichier, enregistrerDocument, TAILLE_MAX } from './fichiers.mjs';
@@ -140,7 +140,7 @@ export function validerInscription(db, id, user) {
   const c = correspondance(db, i);
   const bloquants = c.controles.filter((x) => !x.ok);
   if (bloquants.length) {
-    throw new ErreurMetier(`Validation impossible : ${bloquants.map((x) => x.libelle.toLowerCase()).join(' ; ')} — non vérifié.`);
+    throw new ErreurMetier(`Validation impossible : ${bloquants.map((x) => x.libelle.toLowerCase()).join(' ; ')} : non vérifié.`);
   }
   const agent = db.prepare(`SELECT a.*, c.libelle AS corps, s.nom AS structure_nom FROM agents a JOIN corps c ON c.code = a.corps_code
     JOIN structures s ON s.id = a.structure_id WHERE a.id = ?`).get(c.agent_id);
@@ -162,7 +162,9 @@ export function validerInscription(db, id, user) {
     }
     db.prepare("UPDATE inscriptions SET statut = 'VALIDEE', traite_le = ?, traite_par = ?, agent_id = ? WHERE id = ?")
       .run(new Date().toISOString(), user.nom, agent.id, id);
-    journaliser(db, user.nom, 'Inscription validée, compte activé', `${i.numero} – ${agent.prenoms} ${agent.nom}`);
+    notifier(db, agent.id, `inscription:${i.numero}`, 'Bienvenue sur Ma Carrière BJ',
+      'Votre compte est activé. Vos justificatifs sont rangés dans votre coffre-fort : ils ne vous seront plus demandés.');
+    journaliser(db, user.nom, 'Inscription validée, compte activé', `${i.numero} : ${agent.prenoms} ${agent.nom}`);
     db.exec('COMMIT');
   } catch (e) { db.exec('ROLLBACK'); throw e; }
   return { statut: 'VALIDEE' };

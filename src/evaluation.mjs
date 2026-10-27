@@ -1,6 +1,6 @@
 // Fiche de notation annuelle. Trois critères (loi 2015-18, art. 53-54) :
 //   compétence (taux de réalisation des attentes), conscience professionnelle,
-//   et sens du service public — ou leadership pour les agents qui encadrent.
+//   et sens du service public, ou leadership pour les agents qui encadrent.
 // Chaque critère se décline en éléments notés de 1 à 5 ; la note est ramenée
 // sur 20 selon la règle `ponderation_evaluation`.
 

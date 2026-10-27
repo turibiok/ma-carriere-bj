@@ -19,6 +19,24 @@ export class ErreurMetier extends Error {
 
 const TYPES_SIGNABLES = ['AVANCEMENT_ECHELON', 'AVENANT', 'AVANCEMENT_GRADE', 'TITULARISATION', 'DEPART_RETRAITE'];
 
+// --- Notifications proactives ---
+// L'administration informe l'agent à chaque étape, sans qu'il ait à se renseigner.
+// En production, chaque notification part aussi par SMS. La clé évite les doublons
+// quand le moteur repasse chaque nuit sur une même proposition.
+export function notifier(db, agentId, cle, titre, message) {
+  if (!agentId) return;
+  db.prepare('INSERT OR IGNORE INTO notifications (agent_id, cle, horodatage, titre, message) VALUES (?, ?, ?, ?, ?)')
+    .run(agentId, cle, new Date().toISOString(), titre, message);
+}
+
+const ANNONCES = {
+  AVANCEMENT_ECHELON: 'Avancement d\'échelon détecté',
+  AVENANT: 'Augmentation biennale détectée',
+  AVANCEMENT_GRADE: 'Éligibilité à l\'avancement de grade',
+  TITULARISATION: 'Titularisation proposée',
+  DEPART_RETRAITE: 'Départ à la retraite à préparer',
+};
+
 export function agentComplet(db, id) {
   const a = db.prepare(`SELECT a.*, c.libelle AS corps, c.secteur, s.nom AS structure, s.departement, s.ministere,
       (SELECT prenoms || ' ' || nom FROM agents x WHERE x.id = a.superieur_id) AS superieur
@@ -54,6 +72,10 @@ export function executerMoteur(db, utilisateur = 'systeme', date = aujourdhui())
         if (dejaTraite.get(a.id, p.type, p.date_effet)) continue;
         inserer.run(a.id, p.type, p.libelle, p.date_effet, json(p.details), date);
         compte[p.type] = (compte[p.type] ?? 0) + 1;
+        if (ANNONCES[p.type]) {
+          notifier(db, a.id, `proposition:${p.type}:${p.date_effet}`, ANNONCES[p.type],
+            `${p.libelle}. Votre service du personnel en est saisi : vous n'avez aucune démarche à faire.`);
+        }
       }
     }
     journaliser(db, utilisateur, 'Exécution du moteur de règles', json(compte));
@@ -118,7 +140,9 @@ export function validerEvenement(db, id, user) {
       hist.run(a.id, e.date_effet, e.type, `Admission à la retraite ; dossier transmis pour liquidation automatique de la pension (acte ${acte.numero})`, acte.id);
     }
     db.prepare("UPDATE evenements SET statut = 'SIGNE', acte_id = ? WHERE id = ?").run(acte.id, id);
-    journaliser(db, user.nom, 'Acte signé', `${acte.numero} – ${e.libelle}`);
+    notifier(db, a.id, `acte:${acte.numero}`, 'Acte signé',
+      `${e.libelle} : acte n° ${acte.numero} signé le ${aujourdhui().split('-').reverse().join('/')}. Il est consultable dans « Mes actes ».`);
+    journaliser(db, user.nom, 'Acte signé', `${acte.numero} : ${e.libelle}`);
     db.exec('COMMIT');
     return { statut: 'SIGNE', acte };
   } catch (err) { db.exec('ROLLBACK'); throw err; }
@@ -129,6 +153,7 @@ export function rejeterEvenement(db, id, motif, user) {
   const e = db.prepare('SELECT * FROM evenements WHERE id = ?').get(id);
   if (!e || !['PROPOSE', 'VALIDE_RH'].includes(e.statut)) throw new ErreurMetier('Proposition non rejetable');
   db.prepare("UPDATE evenements SET statut = 'REJETE', motif_rejet = ? WHERE id = ?").run(motif, id);
+  if (ANNONCES[e.type]) notifier(db, e.agent_id, `rejet:${id}`, 'Proposition non retenue', `${e.libelle} : ${motif}. Vous pouvez déposer une réclamation en ligne.`);
   journaliser(db, user.nom, 'Proposition rejetée', `${e.type} agent ${e.agent_id} : ${motif}`);
 }
 
@@ -206,6 +231,11 @@ export function actionEvaluation(db, id, action, corps, user) {
       throw new ErreurMetier('Action inconnue', 404);
   }
   maj.run(statut, json(fiche), note_finale, men, commentaire_evaluateur, commentaire_agent, decision_commission, aujourdhui(), id);
+  // Chacun est prévenu quand c'est à lui d'agir.
+  const agentNom = db.prepare("SELECT prenoms || ' ' || nom AS n FROM agents WHERE id = ?").get(ev.agent_id)?.n;
+  if (action === 'auto') notifier(db, ev.superieur_id, `notation:${id}:auto`, 'Fiche de notation à remplir', `${agentNom} a transmis son auto-évaluation ${ev.annee}. À vous de la noter.`);
+  if (action === 'evaluer') notifier(db, ev.agent_id, `notation:${id}:note`, 'Votre notation est disponible', `Notation ${ev.annee} : ${note_finale}/20 (${men}). Visez votre fiche ou formez un recours en ligne.`);
+  if (action === 'commission') notifier(db, ev.agent_id, `notation:${id}:cap`, 'Avis de la commission sur votre recours', `${decision_commission}. Note retenue : ${note_finale}/20 (${men}).`);
   journaliser(db, user.nom, `Évaluation : ${action}`, `fiche ${id} (${statut})`);
   return { statut, note_finale, mention: men };
 }
@@ -225,7 +255,7 @@ export function catalogueDemarches(db, agentId) {
 
 const PIECES_CONSERVEES = ['RIB', 'PHOTOS']; // déposées une fois, réutilisées ensuite
 
-// fichiers : { TYPE_PIECE: { nom, contenu (base64) } } — seules les pièces « à fournir » sont attendues.
+// fichiers : { TYPE_PIECE: { nom, contenu (base64) } } : seules les pièces « à fournir » sont attendues.
 export function deposerDemande(db, agentId, { type, motif, fichiers = {}, diplome }, user) {
   if (!DEMARCHES[type]) throw new ErreurMetier('Démarche inconnue');
   const r = resoudrePieces(type, dossierAgent(db, agentId));
@@ -289,6 +319,8 @@ export function traiterDemande(db, id, { decision, reponse }, user) {
     }
     db.prepare('UPDATE demandes SET statut = ?, traite_le = ?, reponse = ?, acte_id = ? WHERE id = ?')
       .run(decision, aujourdhui(), reponse ?? (decision === 'ACCEPTEE' ? 'Demande acceptée' : null), acteId, id);
+    notifier(db, d.agent_id, `demande:${id}`, decision === 'ACCEPTEE' ? 'Demande acceptée' : 'Demande rejetée',
+      `${DEMARCHES[d.type].libelle} : ${decision === 'ACCEPTEE' ? 'acceptée' : `rejetée. Motif : ${reponse}`}.`);
     journaliser(db, user.nom, `Demande ${decision.toLowerCase()}`, `demande ${id}`);
     db.exec('COMMIT');
   } catch (e) { db.exec('ROLLBACK'); throw e; }
@@ -297,5 +329,7 @@ export function traiterDemande(db, id, { decision, reponse }, user) {
 export function verifierDiplome(db, id, user) {
   const r = db.prepare('UPDATE diplomes SET verifie = 1 WHERE id = ? AND verifie = 0').run(id);
   if (!r.changes) throw new ErreurMetier('Diplôme introuvable ou déjà vérifié');
+  const d = db.prepare('SELECT agent_id, intitule FROM diplomes WHERE id = ?').get(id);
+  notifier(db, d.agent_id, `diplome:${id}`, 'Diplôme vérifié', `${d.intitule} : vérifié et versé à votre dossier.`);
   journaliser(db, user.nom, 'Diplôme vérifié', `diplome ${id}`);
 }

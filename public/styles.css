@@ -256,6 +256,21 @@ tr.manquant td:first-child { box-shadow: inset 4px 0 0 var(--danger); }
 .lien-compte { margin-bottom: 6px; border-color: transparent; color: var(--vert-fonce); }
 .modale .grille-champs input, .modale .grille-champs select { width: 100%; }
 
+/* --- Mesure de la simplification et notifications --- */
+.pub-large { max-width: 1040px; margin: 0 auto; }
+.surtitre-vert { text-transform: uppercase; letter-spacing: .08em; font-size: 12px; font-weight: 700; color: var(--vert-fonce); margin-bottom: 4px; }
+.kpi-accent { border-color: var(--vert); background: var(--accent-clair); box-shadow: inset 4px 0 0 var(--vert); }
+.kpi-accent .valeur { color: var(--vert-fonce); }
+.liste-methode { padding-left: 18px; margin: 0 0 10px; }
+.liste-methode li { margin-bottom: 6px; }
+nav a .badge { margin-left: 6px; }
+.notifications { list-style: none; margin: 0; padding: 0; }
+.notifications li { padding: 12px 0; border-bottom: 1px solid var(--ligne); }
+.notifications li:last-child { border-bottom: none; }
+.notifications li.non-lue { box-shadow: inset 3px 0 0 var(--vert); padding-left: 12px; }
+.notif-entete { display: flex; gap: 8px; align-items: center; justify-content: space-between; }
+.notifications p { margin: 4px 0; }
+
 .piece { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dashed var(--ligne); }
 .piece:last-child { border-bottom: none; }
 .demarche h3 { margin-top: 0; }

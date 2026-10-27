@@ -10,6 +10,7 @@ import {
   connecter, deconnecter, utilisateurDuJeton, profil, changerMotDePasse, demanderReinitialisation, reinitialiserMotDePasse, restaurerSession,
 } from './auth.mjs';
 import { MOT_DE_PASSE_DEMO } from './seed.mjs';
+import { mesurerSimplification } from './impact.mjs';
 import {
   deposerInscription, suivreInscription, detailInscription, lireJustificatif, validerInscription, rejeterInscription,
   JUSTIFICATIFS, STATUTS_AGENT, TAILLE_MAX,
@@ -53,6 +54,18 @@ export function creerApi(db) {
     return { ok: true };
   });
   route('GET', '/api/moi', null, (user) => profil(user));
+
+  // Mesure de la simplification : indicateurs publics et agrégés.
+  route('GET', '/api/impact', 'public', () => mesurerSimplification(db));
+
+  // Notifications proactives de l'agent connecté.
+  route('GET', '/api/notifications', null, (user) => (user.agent_id
+    ? db.prepare('SELECT id, horodatage, titre, message, lu FROM notifications WHERE agent_id = ? ORDER BY id DESC LIMIT 50').all(user.agent_id)
+    : []));
+  route('POST', '/api/notifications/lues', null, (user) => {
+    if (user.agent_id) db.prepare('UPDATE notifications SET lu = 1 WHERE agent_id = ?').run(user.agent_id);
+    return { ok: true };
+  });
   route('POST', '/api/mot-de-passe/changer', null, (user, _p, _q, corps, jeton) => changerMotDePasse(db, user, corps, jeton));
   route('POST', '/api/mot-de-passe/oublie', 'public', (_u, _p, _q, corps) =>
     demanderReinitialisation(db, corps, { demo: process.env.MODE_DEMO !== '0' }));

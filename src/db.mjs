@@ -99,6 +99,11 @@ CREATE TABLE justificatifs (
   id INTEGER PRIMARY KEY, inscription_id INTEGER NOT NULL REFERENCES inscriptions(id),
   type TEXT NOT NULL, nom_fichier TEXT NOT NULL, mime TEXT NOT NULL, taille INTEGER NOT NULL, contenu BLOB NOT NULL
 );
+CREATE TABLE notifications (
+  id INTEGER PRIMARY KEY, agent_id INTEGER NOT NULL REFERENCES agents(id), cle TEXT NOT NULL,
+  horodatage TEXT NOT NULL, titre TEXT NOT NULL, message TEXT NOT NULL, lu INTEGER NOT NULL DEFAULT 0,
+  UNIQUE (agent_id, cle)
+);
 CREATE TABLE audit (
   id INTEGER PRIMARY KEY, horodatage TEXT NOT NULL, utilisateur TEXT NOT NULL, action TEXT NOT NULL, cible TEXT
 );
@@ -107,7 +112,7 @@ CREATE INDEX idx_evt_statut ON evenements(statut);
 CREATE INDEX idx_user_tel ON utilisateurs(telephone);
 `;
 // À incrémenter à chaque changement de schéma : une base plus ancienne est rechargée.
-const VERSION_SCHEMA = 4;
+const VERSION_SCHEMA = 5;
 
 export function ouvrir(chemin, { aujourdhui } = {}) {
   if (chemin !== ':memory:') mkdirSync(dirname(chemin), { recursive: true });
@@ -122,7 +127,7 @@ export function ouvrir(chemin, { aujourdhui } = {}) {
 // Recrée le schéma et recharge les données de démonstration.
 export function initialiser(db, aujourdhui = new Date().toISOString().slice(0, 10)) {
   db.exec('PRAGMA foreign_keys = OFF');
-  for (const t of ['audit', 'reinitialisations', 'sessions', 'tentatives', 'justificatifs', 'coffre', 'documents', 'inscriptions', 'utilisateurs', 'regles', 'demandes', 'evenements',
+  for (const t of ['audit', 'notifications', 'reinitialisations', 'sessions', 'tentatives', 'justificatifs', 'coffre', 'documents', 'inscriptions', 'utilisateurs', 'regles', 'demandes', 'evenements',
     'actes', 'evaluations', 'coffre', 'diplomes', 'historique', 'agents', 'corps', 'structures', 'secteurs']) {
     db.exec(`DROP TABLE IF EXISTS ${t}`);
   }

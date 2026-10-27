@@ -1,4 +1,4 @@
-# Ma Carrière BJ — prototype
+# Ma Carrière BJ (prototype)
 
 **Ma Carrière BJ** (adresse prévue : macarriere.bj) est une plateforme de gestion automatique des carrières de tous les agents de l'État
 du Bénin, quel que soit leur secteur : moteur de règles, notation annuelle des
@@ -32,8 +32,8 @@ npm run reset
 
 ## Connexion
 
-La page de connexion propose trois identifiants au choix — **NPI**, **matricule** ou
-**téléphone** (10 chiffres, avec ou sans +229) — avec un **mot de passe**. Mots de passe
+La page de connexion propose trois identifiants au choix (**NPI**, **matricule** ou
+**téléphone** de 10 chiffres, avec ou sans +229), avec un **mot de passe**. Mots de passe
 hachés (scrypt), session de 8 heures limitée à l'onglet, blocage de 15 minutes après
 5 échecs, même message d'erreur pour un identifiant inconnu et un mauvais mot de passe.
 
@@ -76,26 +76,40 @@ né le 27/09/1973. Tout PDF ou image de moins de 2 Mo sert de justificatif.
 
 ## Scénario de démonstration (10 minutes)
 
-1. **Gestionnaire RH** — Tableau de bord, puis « Lancer le moteur de règles » :
-   le moteur analyse les 50 dossiers et propose avancements, avenants ACDPE,
+1. **Gestionnaire RH** : Tableau de bord, puis « Lancer le moteur de règles » :
+   le moteur analyse les 65 dossiers et propose avancements, avenants ACDPE,
    avancements de grade, titularisations, départs à la retraite et alertes.
-2. **Propositions** — « Instruire » un avancement en retard (le rappel de solde est estimé).
-3. **DRH** — onglet « À signer », « Signer l'acte » : l'acte est généré, la situation
+2. **Propositions** : « Instruire » un avancement en retard (le rappel de solde est estimé).
+3. **DRH** : onglet « À signer », « Signer l'acte » : l'acte est généré, la situation
    de l'agent mise à jour, l'historique complété. « Vérifier un acte » avec le code
    imprimé au bas de l'acte.
-4. **Agent** (Afiavi HOUNKPATIN, ACDPE) — « Ma notation » : auto-évaluation.
-5. **Évaluateur** (Comlan DOSSOU) — même fiche : notation. Une note inférieure à 12
+4. **Agent** (Afiavi HOUNKPATIN, ACDPE) : « Ma notation » : auto-évaluation.
+5. **Évaluateur** (Comlan DOSSOU) : même fiche : notation. Une note inférieure à 12
    ou d'au moins 18 exige un rapport spécial.
-6. **Agent** — viser la fiche ou former un recours ; **DRH** — saisir l'avis de la CAP.
-7. **Agent** — « Mes démarches » : chaque démarche indique les pièces que
+6. **Agent** : viser la fiche ou former un recours ; **DRH** : saisir l'avis de la CAP.
+7. **Agent** : « Mes démarches » : chaque démarche indique les pièces que
    l'administration retrouve seule ; l'attestation de service est délivrée immédiatement.
-8. **Administrateur** — « Règles statutaires » : modifier un seuil puis relancer le moteur.
+8. **Administrateur** : « Règles statutaires » : modifier un seuil puis relancer le moteur.
+9. **Agent** : « Notifications » : l'agente a été prévenue de son augmentation détectée,
+   puis de la signature de l'acte, sans avoir rien demandé.
+10. **Sans connexion** : « Mesure de la simplification » : indicateurs publics et agrégés
+    (pièces retrouvées par l'administration, droits détectés, retards rattrapés, délais).
+
+## Administration proactive et mesure de la simplification
+
+- **Notifications** : l'agent est prévenu quand un droit est détecté, quand un acte est
+  signé, quand sa notation est disponible ou qu'une demande est traitée ; l'évaluateur est
+  prévenu quand une auto-évaluation l'attend. En production, chaque message part aussi par SMS.
+- **Mesure de la simplification** (page publique, `#/impact`) : indicateurs recalculés en
+  temps réel, sans donnée personnelle, pour le suivi d'un pilote et la redevabilité.
 
 ## Organisation du code
 
 | Fichier | Rôle |
 | --- | --- |
 | `src/regles.mjs` | Moteur de règles (fonctions pures) et règles par défaut |
+| `src/impact.mjs` | Mesure de la simplification : indicateurs publics agrégés |
+| `src/fichiers.mjs` | Contrôle et stockage des fichiers déposés |
 | `src/evaluation.mjs` | Fiche de notation : critères, circuit, calendrier |
 | `src/pieces.mjs` | Catalogue des pièces, de leurs sources et des démarches |
 | `src/services.mjs` | Traitements métier : moteur, signature des actes, notation, démarches |

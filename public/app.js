@@ -14,7 +14,7 @@ const stockage = {
 // --- Utilitaires ---
 
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const date = (iso) => (iso ? iso.slice(0, 10).split('-').reverse().join('/') : '—');
+const date = (iso) => (iso ? iso.slice(0, 10).split('-').reverse().join('/') : '-');
 const fcfa = (n) => `${Math.round(n).toLocaleString('fr-FR')} FCFA`;
 const nombre = (n) => Number(n).toLocaleString('fr-FR');
 
@@ -115,11 +115,11 @@ const statutAgent = (a) => (a.statut === 'APE' ? (a.stagiaire ? 'Fonctionnaire s
 // --- Navigation par profil ---
 
 const MENUS = {
-  agent: [['#/moi', 'Mon dossier'], ['#/evaluations', 'Ma notation'], ['#/demarches', 'Mes démarches'], ['#/actes', 'Mes actes'], ['#/verifier', 'Vérifier un acte']],
-  evaluateur: [['#/', 'Tableau de bord'], ['#/agents', 'Mon équipe'], ['#/evaluations', 'Notations'], ['#/moi', 'Mon dossier'], ['#/demarches', 'Mes démarches'], ['#/actes', 'Actes'], ['#/verifier', 'Vérifier un acte']],
-  gestionnaire: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/regles', 'Règles'], ['#/verifier', 'Vérifier un acte']],
-  drh: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/regles', 'Règles'], ['#/journal', 'Journal'], ['#/verifier', 'Vérifier un acte']],
-  admin: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/regles', 'Règles statutaires'], ['#/agents', 'Agents'], ['#/journal', 'Journal'], ['#/verifier', 'Vérifier un acte']],
+  agent: [['#/moi', 'Mon dossier'], ['#/notifications', 'Notifications'], ['#/evaluations', 'Ma notation'], ['#/demarches', 'Mes démarches'], ['#/actes', 'Mes actes'], ['#/verifier', 'Vérifier un acte'], ['#/impact', 'Mesure de la simplification']],
+  evaluateur: [['#/', 'Tableau de bord'], ['#/agents', 'Mon équipe'], ['#/evaluations', 'Notations'], ['#/moi', 'Mon dossier'], ['#/notifications', 'Notifications'], ['#/demarches', 'Mes démarches'], ['#/actes', 'Actes'], ['#/verifier', 'Vérifier un acte'], ['#/impact', 'Mesure de la simplification']],
+  gestionnaire: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/regles', 'Règles'], ['#/verifier', 'Vérifier un acte'], ['#/impact', 'Mesure de la simplification']],
+  drh: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/regles', 'Règles'], ['#/journal', 'Journal'], ['#/verifier', 'Vérifier un acte'], ['#/impact', 'Mesure de la simplification']],
+  admin: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/regles', 'Règles statutaires'], ['#/agents', 'Agents'], ['#/journal', 'Journal'], ['#/verifier', 'Vérifier un acte'], ['#/impact', 'Mesure de la simplification']],
 };
 
 const ROLES = { agent: 'Agent', evaluateur: 'Évaluateur', gestionnaire: 'Gestionnaire RH', drh: 'DRH', admin: 'Administrateur' };
@@ -129,7 +129,8 @@ function dessinerMenu() {
   document.getElementById('nav').innerHTML = MENUS[etat.user.role]
     .map(([h, t]) => {
       const actif = h === '#/' ? route === '#/' : route.startsWith(h);
-      return `<a href="${h}" class="${actif ? 'actif' : ''}">${esc(t)}</a>`;
+      const pastille = h === '#/notifications' && etat.nonLues ? `<span class="badge b-alerte" aria-label="${etat.nonLues} non lues">${etat.nonLues}</span>` : '';
+      return `<a href="${h}" class="${actif ? 'actif' : ''}">${esc(t)}${pastille}</a>`;
     }).join('');
   const u = etat.user;
   document.getElementById('avatar').textContent = u.nom.split(/\s+/).map((m) => m[0]).slice(0, 2).join('').toUpperCase();
@@ -227,7 +228,7 @@ async function vueAgent(id) {
   const contenu = {
     carriere: `<ol class="frise">${d.historique.map((h) => `<li><time>${date(h.date_effet)}</time>${esc(h.libelle)}${h.acte_id ? ` · <a href="#/actes/${h.acte_id}">voir l'acte</a>` : ''}</li>`).join('')}</ol>`,
     notations: `<table><thead><tr><th>Année</th><th>Statut</th><th>Note</th><th>Mention</th></tr></thead><tbody>
-      ${d.evaluations.map((e) => `<tr class="lien" data-lien="#/evaluations/${e.id}"><td>${e.annee}</td><td>${badge('statutEval', e.statut)}</td><td>${e.note_finale ?? '—'}${e.note_finale !== null ? '/20' : ''}</td><td>${esc(e.mention ?? '—')}</td></tr>`).join('')}</tbody></table>`,
+      ${d.evaluations.map((e) => `<tr class="lien" data-lien="#/evaluations/${e.id}"><td>${e.annee}</td><td>${badge('statutEval', e.statut)}</td><td>${e.note_finale ?? '-'}${e.note_finale !== null ? '/20' : ''}</td><td>${esc(e.mention ?? '-')}</td></tr>`).join('')}</tbody></table>`,
     propositions: d.evenements.length ? `<table><thead><tr><th>Type</th><th>Objet</th><th>Effet</th><th>Statut</th></tr></thead><tbody>
       ${d.evenements.map((e) => `<tr><td>${badge('typeEvt', e.type)}</td><td>${esc(e.libelle)}${e.motif_rejet ? `<div class="doux petit">Motif : ${esc(e.motif_rejet)}</div>` : ''}</td><td>${date(e.date_effet)}</td><td>${badge('statutEvt', e.statut)}</td></tr>`).join('')}</tbody></table>`
       : '<p class="vide">Aucune proposition pour cet agent.</p>',
@@ -255,7 +256,7 @@ async function vueAgent(id) {
       <div><span>Première prise de service</span><strong>${date(a.date_prise_service)}</strong></div>
       <div><span>Limite d'âge (${a.age_retraite} ans)</span><strong>${date(a.date_retraite)}</strong></div>
       <div><span>NPI</span><strong>${a.npi ? esc(a.npi) : '<span class="badge b-danger">Non renseigné</span>'}</strong></div>
-      <div><span>Supérieur hiérarchique</span><strong>${esc(a.superieur ?? '—')}</strong></div>
+      <div><span>Supérieur hiérarchique</span><strong>${esc(a.superieur ?? '-')}</strong></div>
       <div><span>Ministère</span><strong>${esc(a.ministere)}</strong></div>
     </div>
     <div class="onglets">${onglets.map(([k, t]) => `<button data-action="onglet" data-cle="agent" data-val="${k}" class="${onglet === k ? 'actif' : ''}">${esc(t)}</button>`).join('')}</div>
@@ -323,7 +324,7 @@ async function vueEvaluations() {
       <div class="actions">${[ref.annee, ref.annee - 1, ref.annee - 2].map((a) => `<a class="bouton" href="#/evaluations?annee=${a}" ${a === annee ? 'style="border-color:var(--accent)"' : ''}>${a}</a>`).join('')}</div></div>
     <div class="carte tableau" style="padding:0"><table><thead><tr><th>Agent</th><th>Structure</th><th>Statut</th><th>Note</th><th>Classe</th><th></th></tr></thead><tbody>
       ${liste.map((e) => `<tr class="lien" data-lien="#/evaluations/${e.id}"><td><strong>${esc(e.nom)}</strong> ${esc(e.prenoms)}<div class="doux petit">${esc(e.corps)} · ${e.statut_agent === 'APE' ? 'Fonctionnaire' : 'ACDPE'}</div></td>
-        <td>${esc(e.structure)}</td><td>${badge('statutEval', e.statut)}</td><td>${e.note_finale ?? '—'}</td><td>${esc(e.mention ?? '—')}</td>
+        <td>${esc(e.structure)}</td><td>${badge('statutEval', e.statut)}</td><td>${e.note_finale ?? '-'}</td><td>${esc(e.mention ?? '-')}</td>
         <td>${aFaire(e) ? '<span class="badge b-alerte">À vous d\'agir</span>' : ''}</td></tr>`).join('') || '<tr><td colspan="6" class="vide">Aucune fiche</td></tr>'}
     </tbody></table></div>`;
 }
@@ -342,7 +343,7 @@ async function vueFiche(id) {
   // Le contrôle « tout est noté » est fait à l'envoi, avec un message clair (pas de blocage muet du navigateur).
   const notes = (code, champ, libelle) => `<div class="notes-select" role="radiogroup" aria-label="${esc(libelle)}">${ref.echelle_notation.map((n) =>
     `<label title="${n.note} : ${esc(n.libelle)}"><input type="radio" name="${code}" value="${n.note}" ${n.note === (champ ?? null) ? 'checked' : ''}><span>${n.note}</span></label>`).join('')}</div>`;
-  const cellule = (c, champ) => (c[champ] ?? '—');
+  const cellule = (c, champ) => (c[champ] ?? '-');
   const lignes = e.fiche.rubriques.map((r) => `
     <tr><th colspan="3" style="background:var(--accent-clair);color:var(--accent)">${esc(r.libelle)} <span class="doux">· poids ${e.ponderation[r.code]} %</span></th></tr>
     ${r.criteres.map((c) => `<tr data-critere="${c.code}"><td>${esc(c.libelle)}${c.code.startsWith('obj') ? ' <span class="badge">objectif</span>' : ''}</td>
@@ -351,7 +352,7 @@ async function vueFiche(id) {
   const objectifs = e.fiche.rubriques[0].criteres.filter((c) => c.code.startsWith('obj')).map((c) => c.libelle);
   return `
     <div class="entete"><div><p class="doux petit"><a href="#/evaluations?annee=${e.annee}">← Notation ${e.annee}</a></p>
-      <h1>Fiche de notation ${e.annee} — ${esc(e.prenoms)} ${esc(e.nom)}</h1>
+      <h1>Fiche de notation ${e.annee} : ${esc(e.prenoms)} ${esc(e.nom)}</h1>
       <p class="doux">${esc(e.corps)} · ${e.statut_agent === 'APE' ? 'Fonctionnaire' : 'ACDPE'} · ${esc(e.structure)} · évaluateur : ${esc(e.evaluateur ?? 'direction départementale')}</p></div>
       <div>${badge('statutEval', e.statut)}</div></div>
     <ol class="etapes">${['Objectifs fixés', 'Auto-évaluation', 'Notation', 'Visa ou recours', 'Clôture'].map((t, i) => `<li class="${i < pos + 1 ? 'fait' : i === Math.ceil(pos + 1) ? 'courant' : ''}">${t}</li>`).join('')}</ol>
@@ -364,13 +365,13 @@ async function vueFiche(id) {
       <table><thead><tr><th>Élément apprécié (1 à 5)</th><th>Auto-évaluation</th><th>Évaluateur</th></tr></thead><tbody>${lignes}</tbody></table>
       ${mode === 'auto' ? `<div class="champ" style="margin-top:12px"><label for="commentaire-agent">Commentaire de l'agent (facultatif)</label><textarea id="commentaire-agent" name="commentaire"></textarea></div>` : ''}
       ${mode === 'evaluer' ? `<div class="champ" style="margin-top:12px"><label for="commentaire-eval">Appréciation de l'évaluateur (rapport spécial obligatoire si la note est inférieure à ${e.rapport_special.sous} ou d'au moins ${e.rapport_special.des})</label>
-        <textarea id="commentaire-eval" name="commentaire"></textarea></div><p>Note calculée : <strong data-apercu>—</strong></p>` : ''}
+        <textarea id="commentaire-eval" name="commentaire"></textarea></div><p>Note calculée : <strong data-apercu>-</strong></p>` : ''}
       ${mode ? `<p class="erreur-form" role="alert" data-erreur></p>
         <button class="principal">${mode === 'auto' ? 'Transmettre mon auto-évaluation' : 'Valider la notation'}</button>` : ''}
     </form>
     <div class="grille g2">
       <div class="carte"><h2>Résultat</h2>
-        <p class="note-grosse">${e.note_finale !== null ? `${e.note_finale}/20` : '—'}</p><p>${esc(e.mention ?? 'Non notée')}</p>
+        <p class="note-grosse">${e.note_finale !== null ? `${e.note_finale}/20` : '-'}</p><p>${esc(e.mention ?? 'Non notée')}</p>
         ${e.commentaire_evaluateur ? `<p><strong>Évaluateur :</strong> ${esc(e.commentaire_evaluateur)}</p>` : ''}
         ${e.commentaire_agent ? `<p><strong>Agent :</strong> ${esc(e.commentaire_agent)}</p>` : ''}
         ${e.decision_commission ? `<p><strong>Avis de la CAP :</strong> ${esc(e.decision_commission)}</p>` : ''}</div>
@@ -381,7 +382,7 @@ async function vueFiche(id) {
           <button class="principal" data-action="commission" data-id="${e.id}">Saisir l'avis de la CAP</button>` : ''}
         ${e.statut === 'CLOTUREE' ? '<p>Fiche clôturée. La note est prise en compte par le moteur de règles (avancement de grade, augmentation biennale des ACDPE, titularisation).</p>' : ''}
         ${mode ? '<p class="doux">Complétez la fiche ci-dessus puis validez.</p>' : ''}
-        ${!mode && !(estAgent && e.statut === 'EVALUEE') && !(etat.user.role === 'drh' && e.statut === 'CONTESTEE') && e.statut !== 'CLOTUREE' ? `<p class="doux">En attente de ${esc(ref.etapes_evaluation[e.statut].acteur ?? '—')}.</p>` : ''}
+        ${!mode && !(estAgent && e.statut === 'EVALUEE') && !(etat.user.role === 'drh' && e.statut === 'CONTESTEE') && e.statut !== 'CLOTUREE' ? `<p class="doux">En attente de ${esc(ref.etapes_evaluation[e.statut].acteur ?? '-')}.</p>` : ''}
       </div></div>`;
 }
 
@@ -448,7 +449,7 @@ async function vueActe(id) {
   return `
     <div class="actions pas-imprimer" style="margin-bottom:12px"><a class="bouton" href="javascript:history.back()">← Retour</a><button data-action="imprimer">Imprimer / PDF</button></div>
     <article class="acte">
-      <div class="filigrane">DOCUMENT DE DÉMONSTRATION — SANS VALEUR JURIDIQUE</div>
+      <div class="filigrane">DOCUMENT DE DÉMONSTRATION, SANS VALEUR JURIDIQUE</div>
       <p style="margin-top:16px">Administration (démonstration)<br>Direction des ressources humaines</p>
       <p>N° ${esc(t.numero)}</p>
       <h1>${esc(titres[t.type] ?? t.type)}</h1>
@@ -473,7 +474,7 @@ async function vueVerifier() {
   if (code) {
     const r = await api(`/api/verifier/${encodeURIComponent(code)}`);
     resultat = r.authentique
-      ? `<div class="carte" style="border-color:var(--ok)"><span class="badge b-ok">Acte authentique</span><p style="margin-top:8px"><strong>${esc(r.numero)}</strong> — ${esc(r.objet)}</p>
+      ? `<div class="carte" style="border-color:var(--ok)"><span class="badge b-ok">Acte authentique</span><p style="margin-top:8px"><strong>${esc(r.numero)}</strong> : ${esc(r.objet)}</p>
         <p class="doux">Agent : ${esc(r.agent)} (${esc(r.matricule)}) · signé le ${date(r.date_signature)} par ${esc(r.signataire)}</p></div>`
       : '<div class="carte" style="border-color:var(--danger)"><span class="badge b-danger">Aucun acte ne correspond à ce code</span></div>';
   }
@@ -574,6 +575,49 @@ async function visionneuse(titre, url, mime) {
   m.querySelector('[data-fermer]').focus();
 }
 
+// Mesure de la simplification : indicateurs publics, recalculés à chaque affichage.
+async function vueImpact() {
+  const m = await api('/api/impact');
+  const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
+  const tuile = (valeur, titre, detail, accent = false) => `<div class="kpi ${accent ? 'kpi-accent' : ''}"><div class="titre">${titre}</div><div class="valeur">${valeur}</div><div class="doux petit">${detail}</div></div>`;
+  return `
+    <div class="entete"><div><p class="surtitre-vert">Transparence</p><h1>Mesure de la simplification</h1>
+      <p class="doux">Ce que la plateforme épargne aux agents de l'État, calculé en temps réel sur ${nombre(m.agents)} dossiers de ${m.secteurs} secteurs. Chiffres agrégés, sans aucune donnée personnelle.</p></div></div>
+    <div class="kpis">
+      ${tuile(`${pct(m.pieces.evitees, m.pieces.total)} %`, "Pièces retrouvées par l'administration", `${nombre(m.pieces.evitees)} pièces sur ${nombre(m.pieces.total)} exigées par les démarches ne sont plus demandées aux agents`, true)}
+      ${tuile(nombre(m.droits_detectes), "Droits détectés d'office", 'avancements, avenants, titularisations et départs proposés sans réclamation')}
+      ${tuile(nombre(m.retards_rattrapes), 'Retards rattrapés', `rappel de solde calculé : ${fcfa(m.rappel_estime)}`)}
+      ${tuile(nombre(m.demarches_en_ligne), 'Démarches faites en ligne', 'autant de déplacements évités')}
+      ${tuile(nombre(m.attestations_immediates), 'Attestations immédiates', 'délivrées sans pièce ni attente')}
+      ${tuile(m.delai_moyen_jours === null ? '-' : `${m.delai_moyen_jours} j`, 'Délai de signature', `entre la détection d'un droit et la signature de l'acte (${m.actes_signes} acte(s))`)}
+      ${tuile(`${m.notation.cloturees}/${m.notation.total}`, `Notation ${m.notation.annee}`, 'fiches clôturées dans le calendrier légal')}
+      ${tuile(nombre(m.notifications), 'Notifications envoyées', "l'agent est informé sans avoir à se renseigner")}
+    </div>
+    <div class="carte"><h2>Comment ces chiffres sont calculés</h2>
+      <ul class="liste-methode">
+        <li><strong>Pièces retrouvées :</strong> pour chaque agent et chaque démarche, chaque pièce exigée est rapprochée de sa source (registre d'identité via le NPI, dossier individuel, coffre-fort, solde). Seules les pièces sans source restent à fournir.</li>
+        <li><strong>Droits détectés :</strong> propositions du moteur de règles qui applique le statut général de la fonction publique à tous les dossiers.</li>
+        <li><strong>Retards et rappels :</strong> pour chaque échelon dû en retard, gain d'indice multiplié par le nombre de mois de retard et la valeur du point (estimation).</li>
+        <li><strong>Délai de signature :</strong> moyenne, en jours, entre la proposition du moteur et la signature de l'acte par le DRH.</li>
+      </ul>
+      <p class="doux petit">Prototype : données fictives. En production, ces indicateurs serviront au suivi du pilote et à la redevabilité, dans l'esprit du Partenariat pour un Gouvernement Ouvert.</p></div>`;
+}
+
+async function vueNotifications() {
+  const liste = await api('/api/notifications');
+  if (liste.some((n) => !n.lu)) {
+    await api('/api/notifications/lues', { method: 'POST' });
+    etat.nonLues = 0;
+    dessinerMenu();
+  }
+  return `<div class="entete"><div><h1>Notifications</h1>
+      <p class="doux">L'administration vous informe à chaque étape, sans que vous ayez à vous renseigner. En production, chaque message part aussi par SMS.</p></div></div>
+    <div class="carte">${liste.length ? `<ul class="notifications">${liste.map((n) => `
+      <li class="${n.lu ? '' : 'non-lue'}"><div class="notif-entete"><strong>${esc(n.titre)}</strong>${n.lu ? '' : '<span class="badge b-alerte">Nouveau</span>'}</div>
+        <p>${esc(n.message)}</p><time class="doux petit">${new Date(n.horodatage).toLocaleString('fr-FR')}</time></li>`).join('')}</ul>`
+      : '<p class="vide">Aucune notification pour le moment. Vous serez prévenu dès qu\'un droit vous concernant sera détecté.</p>'}</div>`;
+}
+
 async function vueJournal() {
   const lignes = await api('/api/audit');
   return `<div class="entete"><div><h1>Journal d'audit</h1><p class="doux">Qui a fait quoi, et quand. 200 dernières entrées.</p></div></div>
@@ -605,7 +649,7 @@ function coquillePublique(contenu) {
     <header class="pub-entete">
       <a class="pub-marque" href="#/"><span class="logo" aria-hidden="true">MC</span>
         <span><strong>Ma Carrière BJ</strong><small>Plateforme de gestion des carrières des agents de l'État</small></span></a>
-      <nav class="pub-nav" aria-label="Liens utiles"><a href="#/">Connexion</a><a href="#/inscription">Créer un compte</a><a href="#/verifier">Vérifier un acte</a></nav>
+      <nav class="pub-nav" aria-label="Liens utiles"><a href="#/">Connexion</a><a href="#/inscription">Créer un compte</a><a href="#/verifier">Vérifier un acte</a><a href="#/impact">Mesure de la simplification</a></nav>
     </header>
     <main class="pub-contenu" id="pub-contenu" tabindex="-1">${contenu}</main>
     <footer class="pub-pied">
@@ -685,13 +729,15 @@ async function afficherPublic() {
   montrer(false);
   const zone = document.getElementById('public');
   const route = location.hash.split('?')[0];
-  const page = route.startsWith('#/verifier') ? 'verifier'
+  const page = route.startsWith('#/impact') ? 'impact'
+    : route.startsWith('#/verifier') ? 'verifier'
     : route.startsWith('#/inscription/suivi') ? 'suivi'
     : route.startsWith('#/inscription') ? 'inscription' : 'connexion';
   try {
     let contenu;
     if (page === 'verifier') contenu = `<div class="pub-etroit">${await vueVerifier()}</div>`;
     else if (page === 'suivi') contenu = await pageSuivi();
+    else if (page === 'impact') contenu = `<div class="pub-large">${await vueImpact()}</div>`;
     else if (page === 'inscription') contenu = await pageInscription();
     else {
       if (!etat.demo) {
@@ -975,6 +1021,9 @@ document.addEventListener('submit', async (ev) => {
 async function afficher() {
   if (!etat.user) return afficherPublic();
   montrer(true);
+  if (etat.user.agent_id) {
+    try { etat.nonLues = (await api('/api/notifications')).filter((n) => !n.lu).length; } catch { etat.nonLues = 0; }
+  }
   dessinerMenu();
   const [chemin] = (location.hash.slice(1) || '/').split('?');
   const p = chemin.split('/').filter(Boolean);
@@ -991,6 +1040,8 @@ async function afficher() {
     else if (p[0] === 'verifier') html = await vueVerifier();
     else if (p[0] === 'regles') html = await vueRegles();
     else if (p[0] === 'journal') html = await vueJournal();
+    else if (p[0] === 'impact') html = await vueImpact();
+    else if (p[0] === 'notifications') html = await vueNotifications();
     else if (p[0] === 'inscriptions') html = p[1] ? await vueInscription(p[1]) : await vueInscriptions();
     else html = '<p class="vide">Page introuvable.</p>';
     if (html) vue.innerHTML = html;
