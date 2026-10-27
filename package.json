@@ -1,0 +1,15 @@
+{
+  "name": "ma-carriere-bj",
+  "version": "0.1.0",
+  "description": "Ma Carrière BJ (macarriere.bj) : prototype de plateforme de gestion automatique des carrières de tous les agents de l'État (Bénin)",
+  "type": "module",
+  "private": true,
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning server.mjs",
+    "reset": "node --disable-warning=ExperimentalWarning scripts/reset.mjs",
+    "test": "node --disable-warning=ExperimentalWarning --test \"tests/*.test.mjs\""
+  }
+}

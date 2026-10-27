@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#008751">
+  <title>Ma Carrière BJ — prototype</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="drapeau" aria-hidden="true"><span></span><span></span><span></span></div>
+  <div class="bandeau">Prototype de démonstration — données fictives, documents sans valeur juridique</div>
+
+  <!-- Visible tant que l'application n'a pas démarré : si la page est ouverte comme un
+       fichier, ou si le serveur est arrêté, ce message reste affiché. -->
+  <div id="demarrage" class="demarrage" role="status">
+    <p><strong>Chargement de Ma Carrière BJ…</strong></p>
+    <p class="doux" id="demarrage-aide">Si ce message reste affiché, la page n'est pas servie par la plateforme.
+      Dans le dossier <code>CarrieresBenin</code>, lancez <code>npm start</code>, puis ouvrez
+      <a href="http://localhost:3800">http://localhost:3800</a> (et non le fichier <code>index.html</code>).</p>
+  </div>
+
+  <!-- Espace public : connexion et vérification d'un acte -->
+  <div id="public" class="public" hidden></div>
+
+  <!-- Espace connecté -->
+  <div id="app" class="app" hidden>
+    <aside class="menu">
+      <div class="marque">
+        <span class="logo" aria-hidden="true">MC</span>
+        <div><strong>Ma Carrière BJ</strong><small>macarriere.bj · Agents de l'État</small></div>
+      </div>
+      <nav id="nav"></nav>
+      <div class="compte">
+        <div class="compte-ident">
+          <span class="avatar" id="avatar" aria-hidden="true"></span>
+          <div><strong id="compte-nom"></strong><small id="compte-role"></small></div>
+        </div>
+        <p id="compte-desc"></p>
+        <button type="button" data-action="changer-mdp" class="large lien-compte">Changer mon mot de passe</button>
+        <button type="button" data-action="deconnexion" class="large">Se déconnecter</button>
+      </div>
+    </aside>
+    <main id="vue" tabindex="-1"></main>
+  </div>
+  <div id="modale" class="modale" hidden></div>
+  <div id="toast" class="toast" role="status" hidden></div>
+  <script type="module" src="/app.js"></script>
+</body>
+</html>
