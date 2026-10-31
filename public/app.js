@@ -19,11 +19,17 @@ const fcfa = (n) => `${Math.round(n).toLocaleString('fr-FR')} FCFA`;
 const nombre = (n) => Number(n).toLocaleString('fr-FR');
 
 async function api(chemin, options = {}) {
-  const res = await fetch(chemin, {
-    method: options.method ?? 'GET',
-    headers: { 'Content-Type': 'application/json', ...(etat.jeton ? { Authorization: `Bearer ${etat.jeton}` } : {}) },
-    body: options.corps ? JSON.stringify(options.corps) : undefined,
-  });
+  let res;
+  try {
+    res = await fetch(chemin, {
+      method: options.method ?? 'GET',
+      headers: { 'Content-Type': 'application/json', ...(etat.jeton ? { Authorization: `Bearer ${etat.jeton}` } : {}) },
+      body: options.corps ? JSON.stringify(options.corps) : undefined,
+    });
+  } catch {
+    // Pas de réseau (téléphone hors couverture) : l'appelant peut garder la saisie pour plus tard.
+    throw Object.assign(new Error('Pas de connexion au réseau. Réessayez dès le retour du réseau.'), { horsLigne: true });
+  }
   const json = await res.json();
   if (res.status === 401 && etat.user) {
     // Session expirée : retour à la page de connexion.
@@ -969,6 +975,7 @@ async function ouvrirSession(utilisateur) {
   etat.user = utilisateur;
   etat.ref = await api('/api/referentiels');
   etat.onglet = {};
+  envoyerEnAttente();
 }
 
 function fermerSession() {
@@ -1019,6 +1026,7 @@ document.addEventListener('submit', async (ev) => {
 // --- Routeur ---
 
 async function afficher() {
+  proposerInstallation();
   if (!etat.user) return afficherPublic();
   montrer(true);
   if (etat.user.agent_id) {
@@ -1045,6 +1053,7 @@ async function afficher() {
     else if (p[0] === 'inscriptions') html = p[1] ? await vueInscription(p[1]) : await vueInscriptions();
     else html = '<p class="vide">Page introuvable.</p>';
     if (html) vue.innerHTML = html;
+    restaurerBrouillon();
   } catch (e) {
     vue.innerHTML = `<div class="carte"><span class="badge b-danger">Erreur</span><p style="margin-top:8px">${esc(e.message)}</p></div>`;
   }
@@ -1331,10 +1340,19 @@ document.addEventListener('submit', async (ev) => {
         const notes = Object.fromEntries(lignes.map((l) => [l.dataset.critere, Number(fd.get(l.dataset.critere))]));
         const bouton = form.querySelector('button.principal');
         bouton.disabled = true;
+        const corps = { notes, commentaire: fd.get('commentaire') };
         try {
-          const r = await api(`/api/evaluations/${form.dataset.id}/${form.dataset.form === 'auto' ? 'auto' : 'evaluer'}`, { method: 'POST', corps: { notes, commentaire: fd.get('commentaire') } });
+          const r = await api(`/api/evaluations/${form.dataset.id}/${form.dataset.form}`, { method: 'POST', corps });
+          local.ecrire(cleBrouillon(form), null);
           await recharger(r.note_finale !== null && r.note_finale !== undefined ? `Notation validée : ${r.note_finale}/20 (${r.mention}).` : 'Auto-évaluation transmise à votre supérieur.');
         } catch (err) {
+          if (err.horsLigne) {
+            // Sans réseau : la saisie attend sur le téléphone et part seule au retour du réseau.
+            mettreEnAttente(form.dataset.id, form.dataset.form, corps);
+            afficherAttente(form);
+            toast('Pas de réseau : votre saisie est enregistrée sur ce téléphone et partira automatiquement.');
+            break;
+          }
           // L'erreur reste affichée sous le formulaire (rapport spécial manquant, par exemple).
           zoneErreur.textContent = err.message;
           bouton.disabled = false;
@@ -1352,19 +1370,148 @@ document.addEventListener('submit', async (ev) => {
   } catch (e) { toast(e instanceof SyntaxError ? 'Format JSON invalide' : e.message, true); }
 });
 
+// --- Application mobile : installation, hors connexion, notations en attente ---
+
+// Une notation saisie sans réseau reste sur le téléphone jusqu'au retour du réseau. Seules les notes
+// et le commentaire sont gardés, rattachés au compte qui les a saisis ; l'API n'est jamais mise en cache.
+const ATTENTE = 'mcbj-notations-en-attente';
+const local = {
+  lire: (cle, defaut) => { try { return JSON.parse(localStorage.getItem(cle)) ?? defaut; } catch { return defaut; } },
+  ecrire: (cle, v) => { try { v === null ? localStorage.removeItem(cle) : localStorage.setItem(cle, JSON.stringify(v)); } catch { /* stockage indisponible */ } },
+};
+const cleBrouillon = (form) => `mcbj-brouillon-${etat.user?.id}-${form.dataset.id}-${form.dataset.form}`;
+const ficheEnSaisie = (racine) => racine.querySelector('form[data-form="auto"], form[data-form="evaluer"]');
+
+// Brouillon : chaque note cochée est gardée, même si l'application est fermée en cours de saisie.
+document.addEventListener('input', (ev) => {
+  const form = ev.target.closest('form[data-form="auto"], form[data-form="evaluer"]');
+  if (!form) return;
+  const fd = new FormData(form);
+  const notes = {};
+  for (const l of form.querySelectorAll('tr[data-critere]')) if (fd.get(l.dataset.critere)) notes[l.dataset.critere] = Number(fd.get(l.dataset.critere));
+  local.ecrire(cleBrouillon(form), { notes, commentaire: fd.get('commentaire') ?? '' });
+});
+
+function restaurerBrouillon() {
+  const form = ficheEnSaisie(vue);
+  if (!form) return;
+  const b = local.lire(cleBrouillon(form), null);
+  if (b) {
+    let derniere = null;
+    for (const [code, note] of Object.entries(b.notes)) {
+      const radio = form.querySelector(`input[name="${CSS.escape(code)}"][value="${note}"]`);
+      if (radio) { radio.checked = true; derniere = radio; }
+    }
+    if (form.commentaire && b.commentaire) form.commentaire.value = b.commentaire;
+    derniere?.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  if (local.lire(ATTENTE, []).some((a) => a.utilisateur === etat.user.id && a.evaluation === form.dataset.id)) afficherAttente(form);
+}
+
+function mettreEnAttente(evaluation, action, corps) {
+  const file = local.lire(ATTENTE, []).filter((a) => !(a.utilisateur === etat.user.id && a.evaluation === evaluation));
+  file.push({ utilisateur: etat.user.id, evaluation, action, corps, le: new Date().toISOString() });
+  local.ecrire(ATTENTE, file);
+}
+
+function afficherAttente(form) {
+  form.querySelector('button.principal').disabled = true;
+  form.querySelector('[data-erreur]').innerHTML = '<span class="en-attente">Enregistrée sur ce téléphone : envoi automatique au retour du réseau.</span>';
+}
+
+// Envoi des saisies en attente : à l'ouverture de session et au retour du réseau.
+async function envoyerEnAttente() {
+  if (!etat.user || !navigator.onLine) return;
+  const file = local.lire(ATTENTE, []);
+  const miennes = file.filter((a) => a.utilisateur === etat.user.id);
+  if (!miennes.length) return;
+  const reste = file.filter((a) => a.utilisateur !== etat.user.id);
+  let envoyees = 0, refusees = 0;
+  for (const a of miennes) {
+    try {
+      await api(`/api/evaluations/${a.evaluation}/${a.action}`, { method: 'POST', corps: a.corps });
+      local.ecrire(`mcbj-brouillon-${a.utilisateur}-${a.evaluation}-${a.action}`, null);
+      envoyees++;
+    } catch (e) {
+      // Toujours sans réseau : on réessaiera. Refus du serveur : la saisie reste en brouillon pour correction.
+      if (e.horsLigne) reste.push(a);
+      else { refusees++; toast(`Notation non transmise : ${e.message}`, true); }
+    }
+  }
+  local.ecrire(ATTENTE, reste.length ? reste : null);
+  if (envoyees) await recharger(`${envoyees} notation(s) saisie(s) hors connexion transmise(s).`);
+  else if (refusees) await afficher();
+}
+
+function etatReseau() {
+  document.getElementById('hors-ligne').hidden = navigator.onLine;
+}
+window.addEventListener('offline', etatReseau);
+window.addEventListener('online', () => {
+  etatReseau();
+  if (!etat.demarre) demarrer();
+  else envoyerEnAttente();
+});
+
+// Installation sur l'écran d'accueil : invitation du navigateur (Android) ou mode d'emploi (iPhone).
+let invitation = null;
+const estInstallee = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const estIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+function proposerInstallation() {
+  const zone = document.getElementById('installation');
+  // Proposée sur l'espace public seulement, pour ne jamais masquer une saisie en cours.
+  const masquer = estInstallee() || etat.user || local.lire('mcbj-installation-plus-tard', false) || (!invitation && !estIOS);
+  document.body.classList.toggle('avec-installation', !masquer);
+  if (masquer) { zone.hidden = true; return; }
+  zone.innerHTML = `<img src="/icones/icone-192.png" alt="" width="40" height="40">
+    <div class="texte"><strong>Installer Ma Carrière BJ</strong>
+      <span>${invitation ? 'Sur votre écran d\'accueil, comme une application, utilisable même avec un réseau faible.'
+        : 'Touchez le bouton Partager, puis « Sur l\'écran d\'accueil ».'}</span></div>
+    <div class="actions">${invitation ? '<button class="principal" data-installation="installer">Installer</button>' : ''}
+      <button data-installation="plus-tard">${invitation ? 'Plus tard' : 'Fermer'}</button></div>`;
+  zone.hidden = false;
+}
+
+window.addEventListener('beforeinstallprompt', (ev) => {
+  ev.preventDefault();
+  invitation = ev;
+  proposerInstallation();
+});
+window.addEventListener('appinstalled', () => { invitation = null; proposerInstallation(); toast('Ma Carrière BJ est installée sur votre téléphone.'); });
+document.addEventListener('click', async (ev) => {
+  const choix = ev.target.closest('[data-installation]')?.dataset.installation;
+  if (choix === 'installer' && invitation) {
+    invitation.prompt();
+    await invitation.userChoice;
+    invitation = null;
+  } else if (choix === 'plus-tard') local.ecrire('mcbj-installation-plus-tard', true);
+  if (choix) proposerInstallation();
+});
+
 // --- Démarrage ---
 
 async function demarrer() {
   const accueil = document.getElementById('demarrage');
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => { /* hors HTTPS ou non pris en charge */ });
+  etatReseau();
   // La plateforme a besoin de son serveur : vérifier qu'il répond avant d'afficher quoi que ce soit.
   try {
     const res = await fetch('/api/inscription/parametres');
     if (!res.ok) throw new Error();
   } catch {
-    accueil.classList.add('erreur');
-    accueil.querySelector('strong').textContent = 'Le serveur de Ma Carrière BJ ne répond pas.';
+    accueil.hidden = false;
+    accueil.classList.toggle('erreur', navigator.onLine);
+    if (!navigator.onLine) {
+      // Ouverte depuis l'écran d'accueil sans réseau : l'application repartira seule au retour du réseau.
+      accueil.querySelector('strong').textContent = 'Vous êtes hors connexion.';
+      document.getElementById('demarrage-aide').textContent = "Ma Carrière BJ s'ouvrira dès le retour du réseau. Les notations déjà saisies sur ce téléphone seront alors transmises.";
+    } else {
+      accueil.querySelector('strong').textContent = 'Le serveur de Ma Carrière BJ ne répond pas.';
+    }
     return;
   }
+  etat.demarre = true;
   accueil.hidden = true;
   etat.jeton = stockage.lire();
   if (etat.jeton) {

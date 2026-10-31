@@ -53,6 +53,24 @@ aussi ces comptes en un clic (encadré « Comptes de démonstration », masqué 
 Chacun des 50 agents fictifs a aussi un compte (matricule, NPI ou téléphone de son dossier,
 même mot de passe) ; les chefs de structure ont le profil évaluateur.
 
+## Application mobile
+
+Ma Carrière BJ s'installe sur le téléphone comme une application (application web installable, ou PWA),
+sans passer par une boutique d'applications ni ajouter de dépendance :
+
+- **Installation** : sur Android, la page de connexion propose « Installer » ; sur iPhone, elle indique
+  le chemin (Partager, puis « Sur l'écran d'accueil »). L'application s'ouvre alors en plein écran, avec
+  son icône et des raccourcis vers « Ma notation », « Mes démarches » et « Notifications ».
+- **Réseau faible** : l'interface est gardée sur le téléphone et s'ouvre même sans réseau, avec un
+  message clair. Les réponses de l'API, qui contiennent des données personnelles, ne sont jamais mises en cache.
+- **Notation hors connexion** : chaque note cochée est gardée en brouillon sur le téléphone. Une fiche
+  envoyée sans réseau attend sur le téléphone et part seule au retour du réseau (ou à la prochaine
+  connexion du même compte). Un refus du serveur laisse la saisie en brouillon pour correction.
+
+Le service worker exige HTTPS, sauf sur `localhost`. Pour essayer l'installation sur un vrai téléphone,
+servir le prototype en HTTPS (hébergement ou tunnel) ; en réseau local en HTTP, la plateforme reste
+utilisable dans le navigateur, mais ne s'installe pas.
+
 ## Inscription en ligne
 
 Un agent sans compte clique sur « Créer mon compte » et suit quatre étapes :
@@ -118,7 +136,9 @@ né le 27/09/1973. Tout PDF ou image de moins de 2 Mo sert de justificatif.
 | `src/auth.mjs`, `src/motdepasse.mjs` | Connexion, sessions, blocage après échecs, hachage des mots de passe |
 | `src/db.mjs`, `src/seed.mjs` | Schéma SQLite et données de démonstration |
 | `public/` | Interface web (HTML, CSS, JavaScript sans framework) |
-| `tests/` | Tests du moteur et des circuits (`node --test`) |
+| `public/manifest.webmanifest`, `public/sw.js`, `public/icones/` | Application mobile : installation, fonctionnement hors connexion |
+| `tests/` | Tests du moteur, des circuits et de l'application mobile (`node --test`) |
+| `docs/captures/` | Captures d'écran du scénario de démonstration |
 
 ## Règles appliquées
 
@@ -144,3 +164,5 @@ dans « Règles statutaires » et restent à valider sur le texte consolidé
 - Interconnexions simulées (ANIP/RNPP, solde, casier judiciaire). Les pièces jointes, elles, sont
   réellement déposées, contrôlées (PDF, JPEG ou PNG, 2 Mo) et consultables.
 - Grille indiciaire fictive ; le rappel de solde est une estimation indicative.
+- Application mobile : seule la notation se saisit hors connexion ; les autres démarches demandent le réseau.
+  Pas de notification poussée sur le téléphone (les messages arrivent dans « Notifications », et par SMS en production).

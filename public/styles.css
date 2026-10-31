@@ -287,6 +287,22 @@ nav a .badge { margin-left: 6px; }
 .toast { position: fixed; bottom: 20px; right: 20px; background: #1c2733; color: #fff; padding: 10px 16px; border-radius: 8px; max-width: 420px; z-index: 20; }
 .toast.erreur { background: var(--danger); }
 [hidden] { display: none !important; }
+
+/* --- Application mobile : réseau, installation, saisies en attente --- */
+.hors-ligne { background: var(--alerte-clair); color: var(--alerte); border-bottom: 1px solid #f0d9b5; text-align: center; font-size: 13px; padding: 6px 12px; }
+.installation { position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); z-index: 15; max-width: 560px; margin: 0 auto;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 12px; padding: 12px 14px; background: var(--carte);
+  border: 1px solid var(--ligne); border-left: 4px solid var(--vert); border-radius: var(--rayon); box-shadow: 0 8px 24px rgba(16, 40, 28, .15); }
+.installation img { border-radius: 9px; flex: none; }
+.installation .texte { flex: 1 1 200px; }
+.installation .texte span { display: block; color: var(--doux); font-size: 13px; }
+.installation .actions { display: flex; gap: 8px; }
+body.avec-installation { padding-bottom: 150px; }
+.en-attente { display: inline-block; color: var(--info); background: var(--info-clair); border-radius: 6px; padding: 6px 10px; font-weight: 600; }
+@media (display-mode: standalone) {
+  /* Ouverte depuis l'écran d'accueil : on laisse la place aux zones système du téléphone. */
+  body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+}
 .demarrage { max-width: 620px; margin: 64px auto; padding: 24px; background: #fff; border: 1px solid var(--ligne); border-left: 4px solid var(--vert); border-radius: 10px; }
 .demarrage.erreur { border-left-color: var(--danger); }
 .vide { text-align: center; color: var(--doux); padding: 24px; }
@@ -330,6 +346,7 @@ nav a .badge { margin-left: 6px; }
   form.tableau td[data-libelle] { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
   form.tableau td[data-libelle]::before { content: attr(data-libelle); color: var(--doux); min-width: 110px; }
   .notes-select span { width: 38px; height: 38px; }
+  .toast { left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); max-width: none; }
 }
 @media (max-width: 480px) {
   .pub-marque small { display: none; }
