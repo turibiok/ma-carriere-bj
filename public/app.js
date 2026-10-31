@@ -347,8 +347,8 @@ async function vueFiche(id) {
   const lignes = e.fiche.rubriques.map((r) => `
     <tr><th colspan="3" style="background:var(--accent-clair);color:var(--accent)">${esc(r.libelle)} <span class="doux">· poids ${e.ponderation[r.code]} %</span></th></tr>
     ${r.criteres.map((c) => `<tr data-critere="${c.code}"><td>${esc(c.libelle)}${c.code.startsWith('obj') ? ' <span class="badge">objectif</span>' : ''}</td>
-      <td>${mode === 'auto' ? notes(c.code, c.auto, c.libelle) : cellule(c, 'auto')}</td>
-      <td>${mode === 'evaluer' ? notes(c.code, c.note, c.libelle) : cellule(c, 'note')}</td></tr>`).join('')}`).join('');
+      <td data-libelle="Auto-évaluation">${mode === 'auto' ? notes(c.code, c.auto, c.libelle) : cellule(c, 'auto')}</td>
+      <td data-libelle="Évaluateur">${mode === 'evaluer' ? notes(c.code, c.note, c.libelle) : cellule(c, 'note')}</td></tr>`).join('')}`).join('');
   const objectifs = e.fiche.rubriques[0].criteres.filter((c) => c.code.startsWith('obj')).map((c) => c.libelle);
   return `
     <div class="entete"><div><p class="doux petit"><a href="#/evaluations?annee=${e.annee}">← Notation ${e.annee}</a></p>
