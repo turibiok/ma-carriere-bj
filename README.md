@@ -71,6 +71,20 @@ Le service worker exige HTTPS, sauf sur `localhost`. Pour essayer l'installation
 servir le prototype en HTTPS (hébergement ou tunnel) ; en réseau local en HTTP, la plateforme reste
 utilisable dans le navigateur, mais ne s'installe pas.
 
+### Application Android (Flutter)
+
+Le dossier [`mobile/`](mobile/README.md) contient une application Android native, construite avec
+Flutter, pour les agents et les évaluateurs : dossier, notifications, notation (hors connexion
+comprise) et démarches. Elle utilise la même API que la plateforme web.
+
+```bash
+cd mobile
+```
+
+```bash
+flutter build apk --release
+```
+
 ## Inscription en ligne
 
 Un agent sans compte clique sur « Créer mon compte » et suit quatre étapes :
@@ -139,6 +153,7 @@ né le 27/09/1973. Tout PDF ou image de moins de 2 Mo sert de justificatif.
 | `public/manifest.webmanifest`, `public/sw.js`, `public/icones/` | Application mobile : installation, fonctionnement hors connexion |
 | `tests/` | Tests du moteur, des circuits et de l'application mobile (`node --test`) |
 | `docs/captures/` | Captures d'écran du scénario de démonstration |
+| `mobile/` | Application Android en Flutter (agents et évaluateurs) |
 
 ## Règles appliquées
 
