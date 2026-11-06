@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#008751">
+<meta name="robots" content="noindex">
+<title>Résultats des enquêtes | Ma Carrière BJ</title>
+<meta name="description" content="Résultats en direct des enquêtes anonymes auprès des personnels de santé et des enseignants.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Libre+Franklin:wght@600;800&display=swap">
+<link rel="stylesheet" href="commun.css">
+<style>
+  nav.onglets { display: flex; gap: 4px; border-bottom: 1px solid var(--ligne); flex-wrap: wrap; }
+  nav.onglets a { padding: 10px 14px; text-decoration: none; color: var(--doux); font-weight: 700; border-bottom: 3px solid transparent; margin-bottom: -1px; }
+  nav.onglets a[aria-current="page"] { color: var(--vert-fonce); border-bottom-color: var(--vert); }
+  .direct { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 14px; color: var(--doux); }
+  .pastille { width: 10px; height: 10px; border-radius: 50%; background: var(--vert); box-shadow: 0 0 0 0 var(--vert); }
+  .pastille.hors { background: var(--alerte); }
+  @media (prefers-reduced-motion: no-preference) { .pastille:not(.hors) { animation: pouls 2s infinite; } }
+  @keyframes pouls { 0% { box-shadow: 0 0 0 0 rgba(0, 135, 81, .45); } 70% { box-shadow: 0 0 0 8px rgba(0, 135, 81, 0); } 100% { box-shadow: 0 0 0 0 rgba(0, 135, 81, 0); } }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+  .kpi { background: var(--surface); border: 1px solid var(--ligne); border-radius: 12px; padding: 14px; display: grid; gap: 4px; align-content: start; }
+  .kpi .val { font-family: var(--titre); font-weight: 800; font-size: 30px; font-variant-numeric: tabular-nums; color: var(--vert-fonce); line-height: 1.1; }
+  .kpi .lib { font-size: 13px; color: var(--doux); }
+  .graphiques { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr)); gap: 14px; }
+  .graphique { background: var(--surface); border: 1px solid var(--ligne); border-radius: 12px; padding: 16px; display: grid; gap: 8px; min-width: 0; }
+  .graphique h3 { margin: 0; font-family: var(--titre); font-size: 16px; font-weight: 800; }
+  .graphique .zone { position: relative; height: 240px; }
+  .graphique .base { font-size: 13px; color: var(--doux); }
+  ul.phrases { margin: 0; padding-left: 20px; display: grid; gap: 8px; }
+  .liens { display: grid; gap: 6px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="drapeau" aria-hidden="true"><span></span><span></span><span></span></div>
+<main class="page large">
+  <header>
+    <p class="surtitre">Résultats en direct</p>
+    <h1>Ce que vivent les agents de l’État dans leurs démarches de carrière</h1>
+    <p class="chapeau">Statistiques recalculées à chaque nouvelle réponse. Seules les réponses fermées sont publiées : aucun identifiant, aucune phrase libre.</p>
+    <p class="direct" role="status"><span class="pastille" id="pastille" aria-hidden="true"></span><span id="etat-direct">Connexion…</span></p>
+  </header>
+
+  <nav class="onglets" aria-label="Enquêtes">
+    <a href="#sante" id="onglet-sante">Personnels de santé</a>
+    <a href="#enseignants" id="onglet-enseignants">Enseignants</a>
+  </nav>
+
+  <section id="vide" class="carte" hidden>
+    <h2>Aucune réponse pour l’instant</h2>
+    <p>Les graphiques apparaîtront dès la première réponse. Lien à transmettre aux répondants : <a id="lien-repondre" href="sante.html">répondre à l’enquête</a>.</p>
+  </section>
+
+  <section id="contenu" style="display:grid;gap:20px" hidden>
+    <div class="kpis" id="kpis"></div>
+    <div class="carte">
+      <h2>Phrases prêtes pour le dossier</h2>
+      <ul class="phrases" id="phrases"></ul>
+      <div class="actions"><button type="button" id="copier">Copier les phrases</button></div>
+      <p class="doux petit" id="copie" role="status"></p>
+    </div>
+    <div class="graphiques" id="graphiques"></div>
+  </section>
+
+  <div class="carte liens">
+    <h2>Répondre aux enquêtes</h2>
+    <a href="sante.html">Enquête auprès des personnels de santé</a>
+    <a href="enseignants.html">Enquête auprès des enseignants</a>
+  </div>
+  <p class="pied">Projet Ma Carrière BJ, proposé au Prix national de la simplification administrative. Échantillon volontaire, non représentatif : les chiffres décrivent les répondants.</p>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="config.js"></script>
+<script src="questions.js"></script>
+<script src="resultats.js"></script>
+</body>
+</html>

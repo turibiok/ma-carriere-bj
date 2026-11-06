@@ -1,0 +1,81 @@
+/* Enquêtes Ma Carrière BJ : une colonne pensée pour le téléphone, bandeau aux couleurs du drapeau. */
+:root {
+  --fond: #f3f6f4;
+  --surface: #ffffff;
+  --texte: #17241d;
+  --doux: #55665c;
+  --ligne: #d5dfd9;
+  --vert: #008751;
+  --vert-fonce: #006b40;
+  --vert-clair: #e3f2ea;
+  --jaune: #fcd116;
+  --rouge: #e8112d;
+  --alerte: #a15c00;
+  --alerte-clair: #fdf1df;
+  --info: #2457a6;
+  --info-clair: #e8eefa;
+  --erreur: #b42318;
+  --titre: "Libre Franklin", "Segoe UI", system-ui, sans-serif;
+  --corps: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fond: #0f1612; --surface: #17211b; --texte: #e6efe9; --doux: #9fb2a7; --ligne: #2b3a31;
+    --vert: #3fbf86; --vert-fonce: #7ad7aa; --vert-clair: #183325; --alerte: #f0b35c; --alerte-clair: #3a2a12;
+    --info: #8db3f0; --info-clair: #1b2740; --erreur: #ff8a7a; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--fond); color: var(--texte); font-family: var(--corps); font-size: 16px; line-height: 1.5; }
+.drapeau { display: grid; grid-template-columns: 1fr 1fr 1fr; height: 6px; }
+.drapeau span:nth-child(1) { background: #008751; } .drapeau span:nth-child(2) { background: var(--jaune); } .drapeau span:nth-child(3) { background: var(--rouge); }
+.page { max-width: 720px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px 64px; display: grid; gap: 20px; }
+.page.large { max-width: 1080px; }
+header { display: grid; gap: 8px; }
+.surtitre { font-size: 13px; letter-spacing: .08em; text-transform: uppercase; color: var(--vert-fonce); font-weight: 700; margin: 0; }
+h1 { font-family: var(--titre); font-weight: 800; font-size: clamp(26px, 6vw, 34px); line-height: 1.15; margin: 0; text-wrap: balance; }
+h2 { font-family: var(--titre); font-weight: 800; font-size: 20px; margin: 0; text-wrap: balance; }
+p { margin: 0; }
+a { color: var(--vert-fonce); }
+.doux { color: var(--doux); }
+.petit { font-size: 14px; }
+.chapeau { max-width: 62ch; }
+.garanties { display: flex; flex-wrap: wrap; gap: 8px; }
+.garanties span { font-size: 13px; padding: 4px 10px; border-radius: 99px; background: var(--vert-clair); color: var(--vert-fonce); font-weight: 700; }
+form { display: grid; gap: 20px; }
+fieldset.bloc { border: 0; margin: 0; padding: 0; display: grid; gap: 14px; min-width: 0; }
+fieldset.bloc > legend { font-family: var(--titre); font-weight: 800; font-size: 18px; padding: 0; margin-bottom: 4px; color: var(--vert-fonce); }
+.question { background: var(--surface); border: 1px solid var(--ligne); border-radius: 12px; padding: 16px; display: grid; gap: 10px; }
+.question.manque { border-color: var(--erreur); box-shadow: 0 0 0 1px var(--erreur); }
+.intitule { font-weight: 700; display: flex; gap: 10px; }
+.num { flex: none; font-family: var(--titre); color: var(--vert); font-variant-numeric: tabular-nums; min-width: 1.8em; }
+.retrait { margin-left: calc(1.8em + 10px); }
+.aide { font-size: 14px; color: var(--doux); }
+.choix { display: flex; flex-wrap: wrap; gap: 8px; }
+.choix label { position: relative; }
+.choix input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.choix span { display: inline-block; padding: 9px 14px; border: 1px solid var(--ligne); border-radius: 10px; background: var(--surface); cursor: pointer; min-height: 44px; line-height: 24px; }
+.choix input:checked + span { background: var(--vert); border-color: var(--vert); color: #fff; font-weight: 700; }
+.choix input:focus-visible + span { outline: 3px solid var(--jaune); outline-offset: 2px; }
+.pieces { display: grid; gap: 12px; }
+.pieces .ligne { display: grid; gap: 6px; }
+.champ { display: grid; gap: 6px; }
+.champ input, .champ textarea, textarea { font: inherit; padding: 10px 12px; border: 1px solid var(--ligne); border-radius: 10px; background: var(--surface); color: var(--texte); width: 100%; }
+.champ input:focus, textarea:focus { outline: 3px solid var(--jaune); outline-offset: 1px; border-color: var(--vert); }
+.deux { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+button, .bouton { font: inherit; font-weight: 700; border-radius: 10px; padding: 12px 18px; border: 1px solid var(--ligne); background: var(--surface); color: var(--texte); cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; }
+button.principal, .bouton.principal { background: var(--vert); border-color: var(--vert); color: #fff; }
+button:focus-visible, .bouton:focus-visible { outline: 3px solid var(--jaune); outline-offset: 2px; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+.erreur { color: var(--erreur); font-weight: 700; }
+.carte { background: var(--surface); border: 1px solid var(--ligne); border-radius: 12px; padding: 18px; display: grid; gap: 12px; min-width: 0; }
+.carte.merci { border-left: 5px solid var(--vert); }
+.note { font-size: 14px; padding: 10px 12px; border-radius: 8px; background: var(--info-clair); color: var(--info); }
+.note.alerte { background: var(--alerte-clair); color: var(--alerte); }
+.actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.pied { font-size: 13px; color: var(--doux); }
+@media (prefers-reduced-motion: no-preference) { .choix span { transition: background .12s, border-color .12s; } }
+@media (max-width: 520px) { .retrait { margin-left: 0; } }
