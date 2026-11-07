@@ -82,3 +82,17 @@ test('mot de passe oublié : code SMS à usage unique, 5 essais, même réponse 
   // Sans mode démonstration, le code n'est jamais renvoyé.
   assert.equal(demanderReinitialisation(base, { type: 'matricule', identifiant: 'DRH-0001' }).sms_demo, undefined);
 });
+
+test('démonstration en ligne : une session signée passe d’une instance à l’autre, une signature falsifiée est refusée', () => {
+  process.env.SECRET_SESSION = 'secret-de-test';
+  try {
+    const { jeton } = connecter(db, { type: 'matricule', identifiant: agent.matricule, mot_de_passe: MOT_DE_PASSE_DEMO });
+    const autreInstance = ouvrir(':memory:');
+    assert.equal(utilisateurDuJeton(autreInstance, jeton)?.id, 'agent');
+    const morceaux = jeton.split('.');
+    morceaux[1] = Buffer.from('admin').toString('base64url');
+    assert.equal(utilisateurDuJeton(ouvrir(':memory:'), morceaux.join('.')), null);
+    delete process.env.SECRET_SESSION;
+    assert.equal(utilisateurDuJeton(ouvrir(':memory:'), jeton), null);
+  } finally { delete process.env.SECRET_SESSION; }
+});

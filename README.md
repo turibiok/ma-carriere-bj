@@ -10,6 +10,17 @@ pièces redondantes (« dites-le nous une fois »).
 > Toutes les données sont fictives (noms, matricules, NPI, grille indiciaire).
 > Les actes générés portent la mention « document de démonstration ».
 
+## Démonstration en ligne
+
+https://ma-carriere-bj.vercel.app : même prototype, mêmes comptes de démonstration (dépliez
+« Comptes de démonstration » sous le formulaire de connexion ; un clic connecte).
+
+Hébergée sur Vercel : `api/index.mjs` sert l'API dans une fonction, `vercel.json` sert `public/` et
+redirige `/api/*` vers cette fonction. Chaque instance recrée les données de démonstration en mémoire
+à son démarrage : après une période sans visite, la démonstration repart donc de données neuves.
+La variable `SECRET_SESSION` signe les jetons de session, pour qu'une connexion reste valable si
+l'hébergeur change d'instance. Redéployer : `vercel deploy --prod`.
+
 ## Lancer
 
 Node.js 22.13 ou plus récent suffit : aucune dépendance à installer (SQLite est intégré à Node).

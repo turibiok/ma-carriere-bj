@@ -2,7 +2,7 @@
 // Mots de passe hachés avec scrypt et un sel par compte ; sessions par jeton aléatoire,
 // dont seule l'empreinte est stockée ; blocage temporaire après plusieurs échecs.
 
-import { randomBytes, randomInt, createHash } from 'node:crypto';
+import { randomBytes, randomInt, createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { journaliser } from './db.mjs';
 import { ErreurMetier } from './services.mjs';
 import { motDePasseValide, hacher } from './motdepasse.mjs';
@@ -13,6 +13,32 @@ const DUREE_SESSION_HEURES = 8;
 const ERREUR_GENERIQUE = 'Identifiant ou mot de passe incorrect.';
 
 const empreinteJeton = (jeton) => createHash('sha256').update(jeton).digest('hex');
+
+// Démonstration en ligne : l'hébergeur peut servir les requêtes depuis plusieurs instances,
+// chacune avec sa propre base. Quand SECRET_SESSION est défini, le jeton porte l'utilisateur
+// et l'échéance, signés ; une instance qui ne connaît pas la session la recrée après
+// vérification de la signature. Sans secret, rien ne change.
+const signature = (secret, corps) => createHmac('sha256', secret).update(corps).digest('base64url');
+
+function jetonSigne(utilisateurId, expire) {
+  const aleatoire = randomBytes(32).toString('base64url');
+  const secret = process.env.SECRET_SESSION;
+  if (!secret) return aleatoire;
+  const corps = `${aleatoire}.${Buffer.from(String(utilisateurId)).toString('base64url')}.${Date.parse(expire)}`;
+  return `${corps}.${signature(secret, corps)}`;
+}
+
+function lireJetonSigne(jeton, maintenant) {
+  const secret = process.env.SECRET_SESSION;
+  const morceaux = String(jeton).split('.');
+  if (!secret || morceaux.length !== 4) return null;
+  const [aleatoire, id, exp, sig] = morceaux;
+  const attendue = Buffer.from(signature(secret, `${aleatoire}.${id}.${exp}`));
+  const recue = Buffer.from(sig);
+  if (recue.length !== attendue.length || !timingSafeEqual(recue, attendue)) return null;
+  if (!/^\d+$/.test(exp) || !(Number(exp) > maintenant.getTime())) return null;
+  return { utilisateurId: Buffer.from(id, 'base64url').toString(), expire: new Date(Number(exp)).toISOString() };
+}
 
 // Numéros béninois à 10 chiffres (01 XX XX XX XX), avec ou sans l'indicatif +229.
 export const normaliserTelephone = (t) => String(t ?? '').replace(/\D/g, '').replace(/^229(?=\d{10}$)/, '');
@@ -63,8 +89,8 @@ export function connecter(db, { type, identifiant, mot_de_passe }, maintenant = 
   }
   db.prepare('DELETE FROM tentatives WHERE cle = ?').run(cle);
   db.prepare('DELETE FROM sessions WHERE expire < ?').run(maintenant.toISOString());
-  const jeton = randomBytes(32).toString('base64url');
   const expire = new Date(maintenant.getTime() + DUREE_SESSION_HEURES * 3600000).toISOString();
+  const jeton = jetonSigne(user.id, expire);
   db.prepare('INSERT INTO sessions (jeton, utilisateur_id, expire) VALUES (?, ?, ?)').run(empreinteJeton(jeton), user.id, expire);
   journaliser(db, user.nom, 'Connexion', `par ${type}`);
   return { jeton, expire, utilisateur: profil(user) };
@@ -74,7 +100,13 @@ export function utilisateurDuJeton(db, jeton, maintenant = new Date()) {
   if (!jeton) return null;
   const u = db.prepare(`SELECT u.* FROM sessions s JOIN utilisateurs u ON u.id = s.utilisateur_id
     WHERE s.jeton = ? AND s.expire > ?`).get(empreinteJeton(jeton), maintenant.toISOString());
-  return u ?? null;
+  if (u) return u;
+  const signe = lireJetonSigne(jeton, maintenant);
+  if (!signe) return null;
+  const user = db.prepare('SELECT * FROM utilisateurs WHERE id = ?').get(signe.utilisateurId);
+  if (!user) return null;
+  db.prepare('INSERT OR REPLACE INTO sessions (jeton, utilisateur_id, expire) VALUES (?, ?, ?)').run(empreinteJeton(jeton), user.id, signe.expire);
+  return user;
 }
 
 export function deconnecter(db, jeton) {
