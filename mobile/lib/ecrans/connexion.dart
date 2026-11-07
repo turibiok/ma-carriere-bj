@@ -178,7 +178,7 @@ class _EcranConnexionState extends State<EcranConnexion> {
                   TextField(
                     controller: _serveur,
                     keyboardType: TextInputType.url,
-                    decoration: const InputDecoration(border: OutlineInputBorder(), helperText: 'Émulateur Android : http://10.0.2.2:3800'),
+                    decoration: const InputDecoration(border: OutlineInputBorder(), helperText: 'Démo en ligne : https://ma-carriere-bj.vercel.app\nÉmulateur et npm start : http://10.0.2.2:3800', helperMaxLines: 2),
                   ),
                   const SizedBox(height: 8),
                   Align(alignment: Alignment.centerRight, child: OutlinedButton(onPressed: _enregistrerServeur, child: const Text('Enregistrer'))),

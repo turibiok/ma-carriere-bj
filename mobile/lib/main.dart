@@ -13,8 +13,8 @@ const jaune = Color(0xFFFCD116);
 const rouge = Color(0xFFE8112D);
 
 /// Adresse du serveur par défaut : celle de l'ordinateur hôte vu depuis l'émulateur Android.
-/// À la construction : --dart-define=MCBJ_SERVEUR=https://macarriere.bj
-const serveurParDefaut = String.fromEnvironment('MCBJ_SERVEUR', defaultValue: 'http://10.0.2.2:3800');
+/// Par défaut, la démonstration en ligne. À la construction : --dart-define=MCBJ_SERVEUR=http://10.0.2.2:3800
+const serveurParDefaut = String.fromEnvironment('MCBJ_SERVEUR', defaultValue: 'https://ma-carriere-bj.vercel.app');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();

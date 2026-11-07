@@ -45,13 +45,14 @@ L'APK est produit dans `build/app/outputs/flutter-apk/app-release.apk`.
 
 ## Adresse du serveur
 
-Par défaut, l'application joint `http://10.0.2.2:3800`, c'est-à-dire la plateforme lancée avec
-`npm start` sur l'ordinateur qui fait tourner l'émulateur Android. Sur un vrai téléphone, saisir
-l'adresse de l'ordinateur sur le réseau local (par exemple `http://192.168.1.20:3800`) dans
-« Adresse du serveur », sur l'écran de connexion. L'adresse peut aussi être fixée à la construction :
+Par défaut, l'application joint la démonstration en ligne, `https://ma-carriere-bj.vercel.app` :
+elle fonctionne dès l'installation, sans ordinateur. Pour utiliser la plateforme lancée avec
+`npm start`, saisir dans « Adresse du serveur », sur l'écran de connexion, `http://10.0.2.2:3800`
+dans l'émulateur Android, ou l'adresse de l'ordinateur sur le réseau local sur un vrai téléphone
+(par exemple `http://192.168.1.20:3800`). L'adresse par défaut peut aussi être fixée à la construction :
 
 ```bash
-flutter build apk --release --dart-define=MCBJ_SERVEUR=https://macarriere.bj
+flutter build apk --release --dart-define=MCBJ_SERVEUR=http://10.0.2.2:3800
 ```
 
 ## Limites du prototype

@@ -86,7 +86,8 @@ utilisable dans le navigateur, mais ne s'installe pas.
 
 Le dossier [`mobile/`](mobile/README.md) contient une application Android native, construite avec
 Flutter, pour les agents et les évaluateurs : dossier, notifications, notation (hors connexion
-comprise) et démarches. Elle utilise la même API que la plateforme web.
+comprise) et démarches. Elle utilise la même API que la plateforme web et joint par défaut la
+démonstration en ligne. APK à installer : [dernière version](https://github.com/turibiok/ma-carriere-bj/releases/latest).
 
 ```bash
 cd mobile
