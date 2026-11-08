@@ -16,10 +16,21 @@ https://ma-carriere-bj.vercel.app : même prototype, mêmes comptes de démonstr
 « Comptes de démonstration » sous le formulaire de connexion ; un clic connecte).
 
 Hébergée sur Vercel : `api/index.mjs` sert l'API dans une fonction, `vercel.json` sert `public/` et
-redirige `/api/*` vers cette fonction. Chaque instance recrée les données de démonstration en mémoire
-à son démarrage : après une période sans visite, la démonstration repart donc de données neuves.
-La variable `SECRET_SESSION` signe les jetons de session, pour qu'une connexion reste valable si
-l'hébergeur change d'instance. Redéployer : `vercel deploy --prod`.
+redirige `/api/*` vers cette fonction. L'hébergeur peut lancer plusieurs instances en parallèle,
+chacune avec sa base SQLite en mémoire : pour qu'elles voient toutes les mêmes données,
+`src/persistance.mjs` garde la base dans Postgres (Neon) sous forme d'instantané versionné.
+Avant chaque requête, l'instance recharge l'instantané s'il a changé ; après une modification,
+elle l'enregistre si personne ne l'a modifié entre-temps, sinon elle reprend l'état le plus récent
+et rejoue la requête. Les fichiers et images sont rangés une seule fois à part, sous leur empreinte.
+
+| Variable | Rôle |
+| --- | --- |
+| `DATABASE_URL` | Base Neon partagée ; sans elle, chaque instance garde ses propres données en mémoire |
+| `DUREE_DEMO_JOURS` | Âge (7 jours par défaut) au-delà duquel les données de démonstration sont semées à nouveau |
+| `SECRET_SESSION` | Signe les jetons de session, valables sur toutes les instances |
+
+L'administrateur peut aussi tout remettre à zéro (« Réinitialiser les données de démonstration », page Règles).
+Redéployer : `vercel deploy --prod`.
 
 ## Lancer
 
@@ -165,6 +176,7 @@ né le 27/09/1973. Tout PDF ou image de moins de 2 Mo sert de justificatif.
 | `src/inscription.mjs`, `src/secteurs.mjs` | Inscription en ligne, justificatifs, rapprochement avec la base RH ; référentiel des secteurs |
 | `src/auth.mjs`, `src/motdepasse.mjs` | Connexion, sessions, blocage après échecs, hachage des mots de passe |
 | `src/db.mjs`, `src/seed.mjs` | Schéma SQLite et données de démonstration |
+| `src/persistance.mjs` | En ligne : état partagé entre instances (instantané versionné dans Neon) |
 | `public/` | Interface web (HTML, CSS, JavaScript sans framework) |
 | `public/manifest.webmanifest`, `public/sw.js`, `public/icones/` | Application mobile : installation, fonctionnement hors connexion |
 | `tests/` | Tests du moteur, des circuits et de l'application mobile (`node --test`) |

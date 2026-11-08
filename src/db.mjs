@@ -119,7 +119,7 @@ CREATE INDEX idx_evt_statut ON evenements(statut);
 CREATE INDEX idx_user_tel ON utilisateurs(telephone);
 `;
 // À incrémenter à chaque changement de schéma : une base plus ancienne est rechargée.
-const VERSION_SCHEMA = 6;
+export const VERSION_SCHEMA = 6;
 
 export function ouvrir(chemin, { aujourdhui } = {}) {
   if (chemin !== ':memory:') mkdirSync(dirname(chemin), { recursive: true });
@@ -131,8 +131,8 @@ export function ouvrir(chemin, { aujourdhui } = {}) {
   return db;
 }
 
-// Recrée le schéma et recharge les données de démonstration.
-export function initialiser(db, aujourdhui = new Date().toISOString().slice(0, 10)) {
+// Recrée le schéma, vide (sans données de démonstration).
+export function creerSchema(db) {
   db.exec('PRAGMA foreign_keys = OFF');
   for (const t of ['audit', 'notifications', 'reinitialisations', 'signatures', 'sessions', 'tentatives', 'justificatifs', 'coffre', 'documents', 'inscriptions', 'utilisateurs', 'regles', 'demandes', 'evenements',
     'actes', 'evaluations', 'coffre', 'diplomes', 'historique', 'agents', 'corps', 'structures', 'secteurs']) {
@@ -140,6 +140,12 @@ export function initialiser(db, aujourdhui = new Date().toISOString().slice(0, 1
   }
   db.exec('PRAGMA foreign_keys = ON');
   db.exec(SCHEMA);
+  db.exec(`PRAGMA user_version = ${VERSION_SCHEMA}`);
+}
+
+// Recrée le schéma et recharge les données de démonstration.
+export function initialiser(db, aujourdhui = new Date().toISOString().slice(0, 10)) {
+  creerSchema(db);
   db.exec('BEGIN');
   const ins = db.prepare('INSERT INTO regles (cle, valeur, libelle, groupe) VALUES (?, ?, ?, ?)');
   for (const [cle, r] of Object.entries(REGLES_PAR_DEFAUT)) ins.run(cle, JSON.stringify(r.valeur), r.libelle, r.groupe);
