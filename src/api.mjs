@@ -239,7 +239,8 @@ export function creerApi(db) {
 
   // --- Démarches et demandes ---
   route('GET', '/api/demarches', null, (user, _c, q) => {
-    const agentId = user.role === 'agent' ? user.agent_id : Number(q.get('agent'));
+    // Sans agent désigné, chacun voit ses propres démarches (un évaluateur est aussi un agent).
+    const agentId = user.role === 'agent' ? user.agent_id : Number(q.get('agent')) || user.agent_id;
     if (!agentId) throw new ErreurMetier('Agent non précisé');
     if (!peutVoirAgent(user, agentId)) throw new ErreurMetier('Accès refusé', 403);
     return catalogueDemarches(db, agentId);

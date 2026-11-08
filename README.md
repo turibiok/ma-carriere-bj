@@ -61,7 +61,7 @@ aussi ces comptes en un clic (encadré « Comptes de démonstration », masqué 
 | DRH | Directeur des ressources humaines | Matricule DRH-0001 |
 | Administrateur | Administrateur | Matricule ADM-0001 |
 
-Chacun des 50 agents fictifs a aussi un compte (matricule, NPI ou téléphone de son dossier,
+50 des 65 agents fictifs ont aussi un compte (matricule, NPI ou téléphone de son dossier,
 même mot de passe) ; les chefs de structure ont le profil évaluateur.
 
 ## Application mobile
