@@ -121,11 +121,11 @@ const statutAgent = (a) => (a.statut === 'APE' ? (a.stagiaire ? 'Fonctionnaire s
 // --- Navigation par profil ---
 
 const MENUS = {
-  agent: [['#/moi', 'Mon dossier'], ['#/notifications', 'Notifications'], ['#/evaluations', 'Ma notation'], ['#/demarches', 'Mes démarches'], ['#/actes', 'Mes actes'], ['#/verifier', 'Vérifier un acte'], ['#/impact', 'Mesure de la simplification']],
-  evaluateur: [['#/', 'Tableau de bord'], ['#/agents', 'Mon équipe'], ['#/evaluations', 'Notations'], ['#/moi', 'Mon dossier'], ['#/notifications', 'Notifications'], ['#/demarches', 'Mes démarches'], ['#/actes', 'Actes'], ['#/verifier', 'Vérifier un acte'], ['#/impact', 'Mesure de la simplification']],
-  gestionnaire: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/regles', 'Règles'], ['#/verifier', 'Vérifier un acte'], ['#/impact', 'Mesure de la simplification']],
-  drh: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/regles', 'Règles'], ['#/journal', 'Journal'], ['#/verifier', 'Vérifier un acte'], ['#/impact', 'Mesure de la simplification']],
-  admin: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/regles', 'Règles statutaires'], ['#/agents', 'Agents'], ['#/journal', 'Journal'], ['#/verifier', 'Vérifier un acte'], ['#/impact', 'Mesure de la simplification']],
+  agent: [['#/moi', 'Mon dossier'], ['#/notifications', 'Notifications'], ['#/evaluations', 'Ma notation'], ['#/demarches', 'Mes démarches'], ['#/actes', 'Mes actes'], ['#/verifier', 'Vérifier un acte']],
+  evaluateur: [['#/', 'Tableau de bord'], ['#/agents', 'Mon équipe'], ['#/evaluations', 'Notations'], ['#/moi', 'Mon dossier'], ['#/notifications', 'Notifications'], ['#/demarches', 'Mes démarches'], ['#/actes', 'Actes'], ['#/verifier', 'Vérifier un acte']],
+  gestionnaire: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/regles', 'Règles'], ['#/verifier', 'Vérifier un acte']],
+  drh: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/regles', 'Règles'], ['#/journal', 'Journal'], ['#/verifier', 'Vérifier un acte']],
+  admin: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/regles', 'Règles statutaires'], ['#/agents', 'Agents'], ['#/journal', 'Journal'], ['#/verifier', 'Vérifier un acte']],
 };
 
 const ROLES = { agent: 'Agent', evaluateur: 'Évaluateur', gestionnaire: 'Gestionnaire RH', drh: 'DRH', admin: 'Administrateur' };
@@ -581,34 +581,6 @@ async function visionneuse(titre, url, mime) {
   m.querySelector('[data-fermer]').focus();
 }
 
-// Mesure de la simplification : indicateurs publics, recalculés à chaque affichage.
-async function vueImpact() {
-  const m = await api('/api/impact');
-  const pct = (a, b) => (b ? Math.round((a / b) * 100) : 0);
-  const tuile = (valeur, titre, detail, accent = false) => `<div class="kpi ${accent ? 'kpi-accent' : ''}"><div class="titre">${titre}</div><div class="valeur">${valeur}</div><div class="doux petit">${detail}</div></div>`;
-  return `
-    <div class="entete"><div><p class="surtitre-vert">Transparence</p><h1>Mesure de la simplification</h1>
-      <p class="doux">Ce que la plateforme épargne aux agents de l'État, calculé en temps réel sur ${nombre(m.agents)} dossiers de ${m.secteurs} secteurs. Chiffres agrégés, sans aucune donnée personnelle.</p></div></div>
-    <div class="kpis">
-      ${tuile(`${pct(m.pieces.evitees, m.pieces.total)} %`, "Pièces retrouvées par l'administration", `${nombre(m.pieces.evitees)} pièces sur ${nombre(m.pieces.total)} exigées par les démarches ne sont plus demandées aux agents`, true)}
-      ${tuile(nombre(m.droits_detectes), "Droits détectés d'office", 'avancements, avenants, titularisations et départs proposés sans réclamation')}
-      ${tuile(nombre(m.retards_rattrapes), 'Retards rattrapés', `rappel de solde calculé : ${fcfa(m.rappel_estime)}`)}
-      ${tuile(nombre(m.demarches_en_ligne), 'Démarches faites en ligne', 'autant de déplacements évités')}
-      ${tuile(nombre(m.attestations_immediates), 'Attestations immédiates', 'délivrées sans pièce ni attente')}
-      ${tuile(m.delai_moyen_jours === null ? '-' : `${m.delai_moyen_jours} j`, 'Délai de signature', `entre la détection d'un droit et la signature de l'acte (${m.actes_signes} acte(s))`)}
-      ${tuile(`${m.notation.cloturees}/${m.notation.total}`, `Notation ${m.notation.annee}`, 'fiches clôturées dans le calendrier légal')}
-      ${tuile(nombre(m.notifications), 'Notifications envoyées', "l'agent est informé sans avoir à se renseigner")}
-    </div>
-    <div class="carte"><h2>Comment ces chiffres sont calculés</h2>
-      <ul class="liste-methode">
-        <li><strong>Pièces retrouvées :</strong> pour chaque agent et chaque démarche, chaque pièce exigée est rapprochée de sa source (registre d'identité via le NPI, dossier individuel, coffre-fort, solde). Seules les pièces sans source restent à fournir.</li>
-        <li><strong>Droits détectés :</strong> propositions du moteur de règles qui applique le statut général de la fonction publique à tous les dossiers.</li>
-        <li><strong>Retards et rappels :</strong> pour chaque échelon dû en retard, gain d'indice multiplié par le nombre de mois de retard et la valeur du point (estimation).</li>
-        <li><strong>Délai de signature :</strong> moyenne, en jours, entre la proposition du moteur et la signature de l'acte par le DRH.</li>
-      </ul>
-      <p class="doux petit">Prototype : données fictives. En production, ces indicateurs serviront au suivi du pilote et à la redevabilité, dans l'esprit du Partenariat pour un Gouvernement Ouvert.</p></div>`;
-}
-
 async function vueNotifications() {
   const liste = await api('/api/notifications');
   if (liste.some((n) => !n.lu)) {
@@ -655,7 +627,7 @@ function coquillePublique(contenu) {
     <header class="pub-entete">
       <a class="pub-marque" href="#/"><span class="logo" aria-hidden="true">MC</span>
         <span><strong>Ma Carrière BJ</strong><small>Plateforme de gestion des carrières des agents de l'État</small></span></a>
-      <nav class="pub-nav" aria-label="Liens utiles"><a href="#/">Connexion</a><a href="#/inscription">Créer un compte</a><a href="#/verifier">Vérifier un acte</a><a href="#/impact">Mesure de la simplification</a></nav>
+      <nav class="pub-nav" aria-label="Liens utiles"><a href="#/">Connexion</a><a href="#/inscription">Créer un compte</a><a href="#/verifier">Vérifier un acte</a></nav>
     </header>
     <main class="pub-contenu" id="pub-contenu" tabindex="-1">${contenu}</main>
     <footer class="pub-pied">
@@ -748,15 +720,13 @@ async function afficherPublic() {
   montrer(false);
   const zone = document.getElementById('public');
   const route = location.hash.split('?')[0];
-  const page = route.startsWith('#/impact') ? 'impact'
-    : route.startsWith('#/verifier') ? 'verifier'
+  const page = route.startsWith('#/verifier') ? 'verifier'
     : route.startsWith('#/inscription/suivi') ? 'suivi'
     : route.startsWith('#/inscription') ? 'inscription' : 'connexion';
   try {
     let contenu;
     if (page === 'verifier') contenu = `<div class="pub-etroit">${await vueVerifier()}</div>`;
     else if (page === 'suivi') contenu = await pageSuivi();
-    else if (page === 'impact') contenu = `<div class="pub-large">${await vueImpact()}</div>`;
     else if (page === 'inscription') contenu = await pageInscription();
     else {
       if (!etat.demo) {
@@ -1061,7 +1031,6 @@ async function afficher() {
     else if (p[0] === 'verifier') html = await vueVerifier();
     else if (p[0] === 'regles') html = await vueRegles();
     else if (p[0] === 'journal') html = await vueJournal();
-    else if (p[0] === 'impact') html = await vueImpact();
     else if (p[0] === 'notifications') html = await vueNotifications();
     else if (p[0] === 'inscriptions') html = p[1] ? await vueInscription(p[1]) : await vueInscriptions();
     else html = '<p class="vide">Page introuvable.</p>';

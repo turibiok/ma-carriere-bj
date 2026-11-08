@@ -10,7 +10,6 @@ import {
   connecter, deconnecter, utilisateurDuJeton, profil, changerMotDePasse, demanderReinitialisation, reinitialiserMotDePasse, restaurerSession,
 } from './auth.mjs';
 import { MOT_DE_PASSE_DEMO } from './seed.mjs';
-import { mesurerSimplification } from './impact.mjs';
 import {
   deposerInscription, suivreInscription, detailInscription, lireJustificatif, validerInscription, rejeterInscription,
   JUSTIFICATIFS, STATUTS_AGENT, TAILLE_MAX,
@@ -55,8 +54,6 @@ export function creerApi(db) {
   });
   route('GET', '/api/moi', null, (user) => profil(user));
 
-  // Mesure de la simplification : indicateurs publics et agrégés.
-  route('GET', '/api/impact', 'public', () => mesurerSimplification(db));
 
   // Notifications proactives de l'agent connecté.
   route('GET', '/api/notifications', null, (user) => (user.agent_id
