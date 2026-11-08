@@ -108,6 +108,12 @@ nav a.actif { background: var(--accent-clair); color: var(--accent); font-weight
 .demo summary { cursor: pointer; font-weight: 600; font-size: 13px; color: var(--vert-fonce); }
 .compte-demo { width: 100%; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin-top: 6px; text-align: left; }
 .compte-demo span { font-size: 12px; color: var(--doux); }
+.voir-video { margin-top: 22px; background: var(--jaune); color: #17241d; border: none; border-radius: 999px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
+.voir-video:hover { background: #ffe066; }
+.voir-video:focus-visible { outline: 3px solid #fff; outline-offset: 2px; }
+.video-demo { margin-top: 28px; display: grid; grid-template-columns: 1fr 1.9fr; gap: 28px; align-items: center; background: #fff; border: 1px solid var(--ligne); border-radius: 14px; padding: 28px; box-shadow: 0 8px 30px rgba(16, 40, 28, .08); scroll-margin-top: 16px; }
+.video-demo h2 { font-size: 22px; margin: 6px 0 10px; }
+.video-demo video { width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; background: #0b1410; display: block; }
 .nouveau-compte { margin-top: 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px; border: 1px solid #cfe3d8; background: var(--accent-clair); border-radius: 10px; }
 .nouveau-compte span { display: block; font-size: 13px; color: var(--doux); }
 .nouveau-compte .bouton { flex: none; border-color: var(--vert); color: var(--vert-fonce); font-weight: 600; }
@@ -336,6 +342,7 @@ body.avec-installation { padding-bottom: 150px; }
   .carte-insc { padding: 18px; }
   .recap dl { grid-template-columns: 1fr; }
   .piece-insc, .nouveau-compte { flex-direction: column; align-items: stretch; }
+  .video-demo { grid-template-columns: 1fr; padding: 18px; gap: 14px; margin-top: 16px; }
 }
 @media (max-width: 600px) {
   /* Fiche de notation : une ligne par élément, les notes sous son libellé. */

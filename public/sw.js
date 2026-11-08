@@ -26,6 +26,8 @@ self.addEventListener('activate', (ev) => {
 self.addEventListener('fetch', (ev) => {
   const url = new URL(ev.request.url);
   if (ev.request.method !== 'GET' || url.origin !== self.location.origin || url.pathname.startsWith('/api/')) return;
+  // La vidéo de démonstration se lit par morceaux (requêtes partielles) : jamais mise en cache.
+  if (url.pathname.startsWith('/videos/')) return;
   // Réseau d'abord, pour toujours servir la dernière version ; le cache prend le relais hors connexion.
   // Toute page de l'application est la même page (routage par le fragment) : on retombe sur « / ».
   const cle = ev.request.mode === 'navigate' ? '/' : ev.request;

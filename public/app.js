@@ -686,6 +686,7 @@ function pageConnexion() {
           <li><strong>Notation annuelle en ligne</strong><span>Objectifs, auto-évaluation et recours au même endroit.</span></li>
           <li><strong>Aucune pièce redemandée</strong><span>Ce que l'administration détient déjà ne vous est plus réclamé.</span></li>
         </ul>
+        <button type="button" class="voir-video" data-action="voir-video"><span aria-hidden="true">▶</span> Voir la démonstration (3 min)</button>
       </section>
       <section class="connexion-carte" aria-labelledby="titre-connexion">
         <h2 id="titre-connexion">Connexion à votre espace</h2>
@@ -713,7 +714,19 @@ function pageConnexion() {
         <p class="doux petit">Inscription en cours de vérification ? <a href="#/inscription/suivi">Suivre ma demande</a>.</p>
         ${demo}
       </section>
-    </div>`;
+    </div>
+    <section class="video-demo" id="video-demo" aria-labelledby="titre-video">
+      <div class="video-demo-texte">
+        <p class="surtitre-vert">Démonstration</p>
+        <h2 id="titre-video">La plateforme en trois minutes</h2>
+        <p>Du moteur de règles qui détecte un avancement dû jusqu'à l'acte signé et vérifiable, en passant par la notation annuelle et les démarches sans pièce redemandée.</p>
+        <p class="doux petit">Vidéo commentée et sous-titrée · données fictives.</p>
+      </div>
+      <video controls preload="none" playsinline poster="/videos/demo-affiche.jpg" aria-label="Démonstration de Ma Carrière BJ en trois minutes">
+        <source src="/videos/demo-ma-carriere-bj.mp4" type="video/mp4">
+        <a href="/videos/demo-ma-carriere-bj.mp4">Télécharger la vidéo de démonstration</a>
+      </video>
+    </section>`;
 }
 
 // Adapte le champ identifiant au type choisi (libellé, clavier mobile, préfixe +229).
@@ -1183,6 +1196,11 @@ const ACTIONS = {
     if (!v) return;
     await api(`/api/inscriptions/${el.dataset.id}/rejeter`, { method: 'POST', corps: { motif: v.motif } });
     await recharger('Demande rejetée ; le motif est consultable par le demandeur.');
+  },
+  'voir-video'() {
+    const bloc = document.getElementById('video-demo');
+    bloc.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    bloc.querySelector('video').play().catch(() => { /* lecture bloquée : les commandes restent disponibles */ });
   },
   'voir-mdp'(el) {
     const champ = document.getElementById('mdp');
