@@ -280,6 +280,19 @@ nav a .badge { margin-left: 6px; }
 .acte { max-width: 760px; margin: 0 auto; background: #fff; border: 1px solid var(--ligne); padding: 40px 48px; font-family: Georgia, "Times New Roman", serif; }
 .acte h1 { text-align: center; font-size: 20px; margin: 18px 0; }
 .acte .filigrane { text-align: center; font-family: system-ui, sans-serif; font-size: 12px; color: var(--danger); border: 1px dashed var(--danger); padding: 6px; }
+/* Bas de l'acte : le cachet chevauche la signature, comme sur papier ; « multiply » efface le fond blanc des images. */
+.bloc-signature { margin: 28px 0 0 auto; width: max-content; max-width: 100%; text-align: center; }
+.bloc-signature p { margin: 0; }
+.apposition { position: relative; display: flex; justify-content: center; align-items: center; min-height: 96px; margin-top: 6px; }
+.apposition img { mix-blend-mode: multiply; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.apposition .manuscrite { position: relative; max-width: 220px; max-height: 90px; }
+.apposition .cachet { max-width: 120px; max-height: 120px; opacity: .85; transform: rotate(-8deg); }
+.apposition .cachet + .manuscrite { margin-left: -70px; }
+.mention-signature { font-family: system-ui, sans-serif; font-size: 10px; color: var(--doux); letter-spacing: .02em; margin-top: 2px; }
+.apercu-image { display: flex; align-items: center; justify-content: center; min-height: 120px; background: #fff; border: 1px dashed var(--ligne); border-radius: var(--rayon); margin: 10px 0; padding: 8px; }
+.apercu-image img { max-width: 100%; max-height: 140px; }
+.apercu-acte { padding: 12px 24px 20px; margin: 10px 0; }
+.note-signature { font-size: 13px; color: var(--doux); background: var(--info-clair); border-radius: var(--rayon); padding: 8px 12px; }
 .acte .verif { margin-top: 28px; border-top: 1px solid var(--ligne); padding-top: 12px; font-family: system-ui, sans-serif; font-size: 12px; }
 .code { font-family: ui-monospace, Consolas, monospace; background: var(--fond); padding: 2px 6px; border-radius: 4px; letter-spacing: .08em; }
 

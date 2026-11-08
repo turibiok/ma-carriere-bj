@@ -142,6 +142,11 @@ né le 27/09/1973. Tout PDF ou image de moins de 2 Mo sert de justificatif.
 - **Notifications** : l'agent est prévenu quand un droit est détecté, quand un acte est
   signé, quand sa notation est disponible ou qu'une demande est traitée ; l'évaluateur est
   prévenu quand une auto-évaluation l'attend. En production, chaque message part aussi par SMS.
+- **Signature et cachet** : le DRH et le gestionnaire RH importent leur signature manuscrite
+  et leur cachet (« Ma signature », PNG ou JPEG de 500 Ko au plus). Ils sont apposés sur chaque
+  acte qu'ils signent, avec la mention « Signature électronique » en petits caractères, puis
+  figés dans l'acte : remplacer ou retirer l'image ensuite ne modifie aucun acte déjà signé.
+  Une signature et un cachet fictifs sont fournis pour la démonstration (`public/exemples/`).
 - **Mesure de la simplification** : les huit indicateurs agrégés (pièces retrouvées, droits
   détectés, retards rattrapés, délais, etc.) sont documentés dans le dossier de candidature.
   La page publique qui les affichait a été retirée du prototype le 8 novembre 2026.
@@ -152,6 +157,7 @@ né le 27/09/1973. Tout PDF ou image de moins de 2 Mo sert de justificatif.
 | --- | --- |
 | `src/regles.mjs` | Moteur de règles (fonctions pures) et règles par défaut |
 | `src/fichiers.mjs` | Contrôle et stockage des fichiers déposés |
+| `src/signatures.mjs` | Signature et cachet importés par les signataires, apposés sur les actes |
 | `src/evaluation.mjs` | Fiche de notation : critères, circuit, calendrier |
 | `src/pieces.mjs` | Catalogue des pièces, de leurs sources et des démarches |
 | `src/services.mjs` | Traitements métier : moteur, signature des actes, notation, démarches |
@@ -189,5 +195,8 @@ dans « Règles statutaires » et restent à valider sur le texte consolidé
 - Interconnexions simulées (ANIP/RNPP, solde, casier judiciaire). Les pièces jointes, elles, sont
   réellement déposées, contrôlées (PDF, JPEG ou PNG, 2 Mo) et consultables.
 - Grille indiciaire fictive ; le rappel de solde est une estimation indicative.
+- La signature apposée est une image : ce n'est pas une signature électronique qualifiée
+  (certificat et clé du signataire). L'authenticité de l'acte repose sur son code de
+  vérification publique ; une signature qualifiée serait à intégrer en production.
 - Application mobile : seule la notation se saisit hors connexion ; les autres démarches demandent le réseau.
   Pas de notification poussée sur le téléphone (les messages arrivent dans « Notifications », et par SMS en production).

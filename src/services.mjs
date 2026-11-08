@@ -10,6 +10,7 @@ import {
 import { resoudrePieces, DEMARCHES, PIECES } from './pieces.mjs';
 import { ETAPES, criteres, remplacerObjectifs } from './evaluation.mjs';
 import { lireFichier, enregistrerDocument } from './fichiers.mjs';
+import { imagesDuSignataire } from './signatures.mjs';
 
 export const aujourdhui = () => new Date().toISOString().slice(0, 10);
 const json = (v) => JSON.stringify(v);
@@ -86,13 +87,16 @@ export function executerMoteur(db, utilisateur = 'systeme', date = aujourdhui())
 
 // --- Actes ---
 
-function creerActe(db, { type, agent_id, objet, signataire, contenu = {} }) {
+// signataire_id : compte du signataire, dont la signature et le cachet importés sont apposés.
+function creerActe(db, { type, agent_id, objet, signataire, signataire_id = null, contenu = {} }) {
   const annee = aujourdhui().slice(0, 4);
   const n = db.prepare('SELECT COUNT(*) AS n FROM actes').get().n + 1;
   const numero = `${String(n).padStart(5, '0')}/${annee}/DRH`;
   const code = randomBytes(5).toString('hex').toUpperCase();
-  const r = db.prepare('INSERT INTO actes (numero, type, agent_id, objet, date_signature, signataire, code_verification, contenu) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(numero, type, agent_id, objet, aujourdhui(), signataire, code, json(contenu));
+  const images = signataire_id ? imagesDuSignataire(db, signataire_id) : { signature: null, cachet: null };
+  const r = db.prepare(`INSERT INTO actes (numero, type, agent_id, objet, date_signature, signataire, code_verification, contenu, signature, cachet)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
+    .run(numero, type, agent_id, objet, aujourdhui(), signataire, code, json(contenu), images.signature, images.cachet);
   return { id: Number(r.lastInsertRowid), numero, code };
 }
 
@@ -121,7 +125,7 @@ export function validerEvenement(db, id, user) {
   db.exec('BEGIN');
   try {
     const acte = creerActe(db, {
-      type: e.type, agent_id: a.id, objet: e.libelle, signataire: user.nom,
+      type: e.type, agent_id: a.id, objet: e.libelle, signataire: user.nom, signataire_id: user.id,
       contenu: { ...d, date_effet: e.date_effet, situation_avant: `${a.echelle}-${a.echelon}`, indice_avant: a.indice },
     });
     const hist = db.prepare('INSERT INTO historique (agent_id, date_effet, type, libelle, acte_id) VALUES (?, ?, ?, ?, ?)');
@@ -311,7 +315,7 @@ export function traiterDemande(db, id, { decision, reponse }, user) {
   try {
     let acteId = null;
     if (decision === 'ACCEPTEE' && ['DISPONIBILITE', 'DETACHEMENT', 'MUTATION'].includes(d.type)) {
-      const acte = creerActe(db, { type: d.type, agent_id: d.agent_id, objet: DEMARCHES[d.type].libelle, signataire: user.nom, contenu: { motif: d.motif } });
+      const acte = creerActe(db, { type: d.type, agent_id: d.agent_id, objet: DEMARCHES[d.type].libelle, signataire: user.nom, signataire_id: user.id, contenu: { motif: d.motif } });
       acteId = acte.id;
       if (d.type !== 'MUTATION') db.prepare('UPDATE agents SET position = ? WHERE id = ?').run(d.type, d.agent_id);
       db.prepare('INSERT INTO historique (agent_id, date_effet, type, libelle, acte_id) VALUES (?, ?, ?, ?, ?)')

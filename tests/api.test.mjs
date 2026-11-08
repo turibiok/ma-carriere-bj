@@ -30,7 +30,7 @@ const connecter = async (id) => {
 
 const AGENT = ['/api/moi', '/api/referentiels', '/api/notifications', '/api/evaluations', '/api/demarches', '/api/demandes', '/api/actes'];
 const GESTION = ['/api/moi', '/api/referentiels', '/api/tableau-de-bord', '/api/inscriptions', '/api/evenements?statut=PROPOSE',
-  '/api/agents', '/api/evaluations', '/api/demandes', '/api/actes', '/api/regles'];
+  '/api/agents', '/api/evaluations', '/api/demandes', '/api/actes', '/api/regles', '/api/signature'];
 const PAGES = {
   agent: AGENT,
   evaluateur: [...AGENT, '/api/tableau-de-bord', '/api/agents'],

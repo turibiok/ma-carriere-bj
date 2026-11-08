@@ -67,7 +67,9 @@ CREATE TABLE actes (
   id INTEGER PRIMARY KEY, numero TEXT UNIQUE NOT NULL, type TEXT NOT NULL,
   agent_id INTEGER NOT NULL REFERENCES agents(id), objet TEXT NOT NULL,
   date_signature TEXT NOT NULL, signataire TEXT NOT NULL, code_verification TEXT UNIQUE NOT NULL,
-  contenu TEXT NOT NULL DEFAULT '{}'
+  contenu TEXT NOT NULL DEFAULT '{}',
+  -- Signature et cachet apposés à la signature, figés (data URI) : les changer ensuite ne modifie pas l'acte.
+  signature TEXT, cachet TEXT
 );
 CREATE TABLE demandes (
   id INTEGER PRIMARY KEY, agent_id INTEGER NOT NULL REFERENCES agents(id),
@@ -80,6 +82,11 @@ CREATE TABLE regles (
 CREATE TABLE utilisateurs (
   id TEXT PRIMARY KEY, nom TEXT NOT NULL, role TEXT NOT NULL, agent_id INTEGER, description TEXT,
   matricule TEXT UNIQUE NOT NULL, npi TEXT UNIQUE, telephone TEXT, mot_de_passe TEXT NOT NULL
+);
+CREATE TABLE signatures (
+  utilisateur_id TEXT NOT NULL REFERENCES utilisateurs(id), type TEXT NOT NULL CHECK (type IN ('SIGNATURE', 'CACHET')),
+  nom_fichier TEXT NOT NULL, mime TEXT NOT NULL, contenu BLOB NOT NULL, depose_le TEXT NOT NULL,
+  PRIMARY KEY (utilisateur_id, type)
 );
 CREATE TABLE sessions (
   jeton TEXT PRIMARY KEY, utilisateur_id TEXT NOT NULL REFERENCES utilisateurs(id), expire TEXT NOT NULL
@@ -112,7 +119,7 @@ CREATE INDEX idx_evt_statut ON evenements(statut);
 CREATE INDEX idx_user_tel ON utilisateurs(telephone);
 `;
 // À incrémenter à chaque changement de schéma : une base plus ancienne est rechargée.
-const VERSION_SCHEMA = 5;
+const VERSION_SCHEMA = 6;
 
 export function ouvrir(chemin, { aujourdhui } = {}) {
   if (chemin !== ':memory:') mkdirSync(dirname(chemin), { recursive: true });
@@ -127,7 +134,7 @@ export function ouvrir(chemin, { aujourdhui } = {}) {
 // Recrée le schéma et recharge les données de démonstration.
 export function initialiser(db, aujourdhui = new Date().toISOString().slice(0, 10)) {
   db.exec('PRAGMA foreign_keys = OFF');
-  for (const t of ['audit', 'notifications', 'reinitialisations', 'sessions', 'tentatives', 'justificatifs', 'coffre', 'documents', 'inscriptions', 'utilisateurs', 'regles', 'demandes', 'evenements',
+  for (const t of ['audit', 'notifications', 'reinitialisations', 'signatures', 'sessions', 'tentatives', 'justificatifs', 'coffre', 'documents', 'inscriptions', 'utilisateurs', 'regles', 'demandes', 'evenements',
     'actes', 'evaluations', 'coffre', 'diplomes', 'historique', 'agents', 'corps', 'structures', 'secteurs']) {
     db.exec(`DROP TABLE IF EXISTS ${t}`);
   }

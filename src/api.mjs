@@ -10,6 +10,7 @@ import {
   connecter, deconnecter, utilisateurDuJeton, profil, changerMotDePasse, demanderReinitialisation, reinitialiserMotDePasse, restaurerSession,
 } from './auth.mjs';
 import { MOT_DE_PASSE_DEMO } from './seed.mjs';
+import { ROLES_SIGNATAIRES, imagesDuSignataire, enregistrerImage, retirerImage } from './signatures.mjs';
 import {
   deposerInscription, suivreInscription, detailInscription, lireJustificatif, validerInscription, rejeterInscription,
   JUSTIFICATIFS, STATUTS_AGENT, TAILLE_MAX,
@@ -259,6 +260,11 @@ export function creerApi(db) {
     traiterDemande(db, Number(id), corps, user);
     return { ok: true };
   });
+
+  // --- Signature et cachet des signataires ---
+  route('GET', '/api/signature', ROLES_SIGNATAIRES, (user) => imagesDuSignataire(db, user.id));
+  route('PUT', '/api/signature/:type', ROLES_SIGNATAIRES, (user, { type }, _q, corps) => enregistrerImage(db, user, type, corps));
+  route('DELETE', '/api/signature/:type', ROLES_SIGNATAIRES, (user, { type }) => retirerImage(db, user, type));
 
   // --- Actes ---
   route('GET', '/api/actes', null, (user) => {

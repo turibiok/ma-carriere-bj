@@ -123,8 +123,8 @@ const statutAgent = (a) => (a.statut === 'APE' ? (a.stagiaire ? 'Fonctionnaire s
 const MENUS = {
   agent: [['#/moi', 'Mon dossier'], ['#/notifications', 'Notifications'], ['#/evaluations', 'Ma notation'], ['#/demarches', 'Mes démarches'], ['#/actes', 'Mes actes'], ['#/verifier', 'Vérifier un acte']],
   evaluateur: [['#/', 'Tableau de bord'], ['#/agents', 'Mon équipe'], ['#/evaluations', 'Notations'], ['#/moi', 'Mon dossier'], ['#/notifications', 'Notifications'], ['#/demarches', 'Mes démarches'], ['#/actes', 'Actes'], ['#/verifier', 'Vérifier un acte']],
-  gestionnaire: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/regles', 'Règles'], ['#/verifier', 'Vérifier un acte']],
-  drh: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/regles', 'Règles'], ['#/journal', 'Journal'], ['#/verifier', 'Vérifier un acte']],
+  gestionnaire: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/signature', 'Ma signature'], ['#/regles', 'Règles'], ['#/verifier', 'Vérifier un acte']],
+  drh: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/propositions', 'Propositions'], ['#/agents', 'Agents'], ['#/evaluations', 'Notations'], ['#/demandes', 'Demandes'], ['#/actes', 'Actes'], ['#/signature', 'Ma signature'], ['#/regles', 'Règles'], ['#/journal', 'Journal'], ['#/verifier', 'Vérifier un acte']],
   admin: [['#/', 'Tableau de bord'], ['#/inscriptions', 'Inscriptions'], ['#/regles', 'Règles statutaires'], ['#/agents', 'Agents'], ['#/journal', 'Journal'], ['#/verifier', 'Vérifier un acte']],
 };
 
@@ -273,7 +273,8 @@ async function vuePropositions() {
   const q = new URLSearchParams(location.hash.split('?')[1] ?? '');
   const statut = q.get('statut') ?? 'PROPOSE';
   const type = q.get('type') ?? '';
-  const liste = await api(`/api/evenements?statut=${statut}&type=${type}`);
+  const [liste, images] = await Promise.all([api(`/api/evenements?statut=${statut}&type=${type}`),
+    etat.user.role === 'drh' && statut === 'VALIDE_RH' ? api('/api/signature') : null]);
   const filtres = [['PROPOSE', 'À instruire'], ['VALIDE_RH', 'À signer'], ['SIGNE', 'Signées'], ['TRAITE', 'Alertes traitées'], ['REJETE', 'Rejetées'], ['TOUS', 'Toutes']];
   const role = etat.user.role;
   const actions = (e) => {
@@ -302,6 +303,9 @@ async function vuePropositions() {
     <div class="filtres"><select data-action="type-prop"><option value="">Tous les types</option>
       ${Object.entries(LIBELLES.typeEvt).map(([k, [t]]) => `<option value="${k}" ${type === k ? 'selected' : ''}>${esc(t)}</option>`).join('')}</select>
       <span class="doux" style="align-self:center">${liste.length} proposition(s)</span></div>
+    ${images ? `<p class="note-signature">${images.signature || images.cachet
+    ? `Les actes que vous signez porteront ${[images.signature && 'votre signature', images.cachet && 'votre cachet'].filter(Boolean).join(' et ')}, avec la mention « Signature électronique ». <a href="#/signature">Modifier</a>`
+    : 'Aucune signature importée : vos actes porteront votre nom seul. <a href="#/signature">Importer ma signature et mon cachet</a>'}</p>` : ''}
     <div class="carte tableau" style="padding:0"><table><thead><tr><th>Agent</th><th>Type</th><th>Objet</th><th>Effet</th><th>Statut</th><th></th></tr></thead><tbody>
       ${liste.map((e) => `<tr><td><a href="#/agents/${e.agent_id}"><strong>${esc(e.nom)}</strong> ${esc(e.prenoms)}</a><div class="doux petit">${esc(e.corps)} · ${esc(e.structure)}</div></td>
         <td>${badge('typeEvt', e.type)}</td><td>${esc(e.libelle)}${detail(e)}</td><td>${date(e.date_effet)}</td><td>${badge('statutEvt', e.statut)}</td>
@@ -468,10 +472,44 @@ async function vueActe(id) {
       ${t.type === 'ATTESTATION' ? `<p>Il est attesté que l'intéressé(e), en service depuis le ${date(c.prise_service)}, est en activité à ${esc(c.structure)}, en situation ${esc(c.situation)}.</p>` : ''}
       ${['TITULARISATION', 'DEPART_RETRAITE'].includes(t.type) ? `<p><strong>Date d'effet :</strong> ${date(c.date_effet)}.</p>` : ''}
       ${c.motif ? `<p><strong>Motif :</strong> ${esc(c.motif)}</p>` : ''}
-      <p style="margin-top:28px;text-align:right">Fait le ${date(t.date_signature)}<br><strong>${esc(t.signataire)}</strong></p>
+      ${blocSignature(t)}
       <div class="verif">Acte généré par Ma Carrière BJ. Authenticité vérifiable avec le code <span class="code">${esc(t.code_verification)}</span><br>${esc(lien)}
         <a class="pas-imprimer" href="${lienLocal}">(vérifier dans le prototype)</a></div>
     </article>`;
+}
+
+// Bas de l'acte : date, signataire, puis le cachet et la signature importés, s'il y en a,
+// suivis de la mention « Signature électronique » en petits caractères.
+function blocSignature({ date_signature, signataire, signature, cachet }) {
+  const img = (src, classe, alt) => (src && /^data:image\/(png|jpeg);base64,/.test(src) ? `<img class="${classe}" src="${esc(src)}" alt="${alt}">` : '');
+  const images = signature || cachet
+    ? `<div class="apposition">${img(cachet, 'cachet', 'Cachet')}${img(signature, 'manuscrite', 'Signature')}</div><div class="mention-signature">Signature électronique</div>`
+    : '';
+  return `<div class="bloc-signature"><p>Fait le ${date(date_signature)}<br><strong>${esc(signataire)}</strong></p>${images}</div>`;
+}
+
+async function vueSignature() {
+  const s = await api('/api/signature');
+  const carte = (type, titre, aide) => {
+    const f = s.fichiers[type];
+    return `<div class="carte"><h2>${titre}</h2><p class="doux petit">${aide}</p>
+      <div class="apercu-image">${s[type] ? `<img src="${esc(s[type])}" alt="${titre}">` : '<span class="doux">Aucune image importée</span>'}</div>
+      ${f ? `<p class="doux petit">${esc(f.nom)} · importé le ${date(f.depose_le)}</p>` : ''}
+      <div class="actions"><label class="bouton principal">${f ? 'Remplacer' : 'Importer'}
+        <input type="file" accept="image/png,image/jpeg" data-image-signature="${type}" hidden></label>
+        ${f ? `<button class="danger" data-action="retirer-image" data-type="${type}">Retirer</button>` : ''}</div></div>`;
+  };
+  return `
+    <div class="entete"><div><h1>Ma signature</h1>
+      <p class="doux">Votre signature et votre cachet sont apposés sur chaque acte que vous signez, avec la mention « Signature électronique ».
+      Un acte déjà signé garde l'image de sa signature : la remplacer ici ne le modifie pas.</p></div></div>
+    <div class="grille g2">
+      ${carte('signature', 'Signature manuscrite', 'Signez sur une feuille blanche, puis photographiez ou numérisez-la. PNG ou JPEG, 500 Ko au plus ; un fond transparent ou blanc donne le meilleur rendu.')}
+      ${carte('cachet', 'Cachet', 'Apposez le cachet du service sur une feuille blanche, puis photographiez ou numérisez-le. PNG ou JPEG, 500 Ko au plus.')}
+    </div>
+    <div class="carte"><h2>Aperçu au bas d'un acte</h2>
+      <div class="acte apercu-acte">${blocSignature({ date_signature: new Date().toISOString(), signataire: etat.user.nom, signature: s.signature, cachet: s.cachet })}</div>
+      <p class="doux petit">Prototype : utilisez une image fictive, par exemple <a href="/exemples/signature-demo.png" download>cette signature</a> et <a href="/exemples/cachet-demo.png" download>ce cachet</a> de démonstration.</p></div>`;
 }
 
 async function vueVerifier() {
@@ -1029,6 +1067,7 @@ async function afficher() {
     else if (p[0] === 'demandes') html = await vueDemandes();
     else if (p[0] === 'actes') html = p[1] ? await vueActe(p[1]) : await vueActes();
     else if (p[0] === 'verifier') html = await vueVerifier();
+    else if (p[0] === 'signature' && ['drh', 'gestionnaire'].includes(etat.user.role)) html = await vueSignature();
     else if (p[0] === 'regles') html = await vueRegles();
     else if (p[0] === 'journal') html = await vueJournal();
     else if (p[0] === 'notifications') html = await vueNotifications();
@@ -1132,6 +1171,12 @@ const ACTIONS = {
     await recharger('Demande rejetée.');
   },
   imprimer() { window.print(); },
+  async 'retirer-image'(el) {
+    const libelle = el.dataset.type === 'cachet' ? 'le cachet' : 'la signature';
+    if (!confirm(`Retirer ${libelle} ? Les actes déjà signés la conservent.`)) return;
+    await api(`/api/signature/${el.dataset.type}`, { method: 'DELETE' });
+    await recharger(el.dataset.type === 'cachet' ? 'Cachet retiré.' : 'Signature retirée.');
+  },
   'insc-etape'(el) {
     etat.insc.etape = Number(el.dataset.etape);
     etat.insc.erreur = '';
@@ -1250,6 +1295,18 @@ document.addEventListener('change', (ev) => {
   if (ev.target.name === 'type' && ev.target.closest('#form-connexion')) {
     majIdentifiant(ev.target.value);
     document.getElementById('identifiant').focus();
+    return;
+  }
+  const image = ev.target.dataset.imageSignature;
+  if (image && ev.target.files[0]) {
+    const fichier = ev.target.files[0];
+    const libelle = image === 'cachet' ? 'cachet' : 'signature';
+    if (!['image/png', 'image/jpeg'].includes(fichier.type)) return toast(`Format non accepté (PNG ou JPEG) : ${libelle}.`, true);
+    if (fichier.size > 500 * 1024) return toast(`Image trop volumineuse (500 Ko au plus) : ${libelle}.`, true);
+    lireEnBase64(fichier, libelle)
+      .then((f) => api(`/api/signature/${image}`, { method: 'PUT', corps: f }))
+      .then(() => recharger(image === 'cachet' ? 'Cachet importé.' : 'Signature importée.'))
+      .catch((e) => toast(e.message, true));
     return;
   }
   if (ev.target.dataset.action === 'type-prop') {
