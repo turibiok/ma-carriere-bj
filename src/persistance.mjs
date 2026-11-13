@@ -17,6 +17,7 @@ import { creerApi } from './api.mjs';
 
 const SEUIL_BLOC = 2048; // au-delà, une valeur est rangée à part
 const CORPS_MAX = 13 * 1024 * 1024; // l'API applique ensuite ses propres limites
+const ESSAIS_MAX = 12; // tentatives d'une écriture en conflit avant d'abandonner (environ 8 s au plus)
 const empreinte = (octets) => createHash('sha256').update(octets).digest('hex').slice(0, 32);
 const jour = () => new Date().toISOString().slice(0, 10);
 
@@ -215,11 +216,16 @@ export function creerApiPartagee(stockage, { dureeJours = 7, aujourdhui = jour }
 
   async function executer(req, corps) {
     const lecture = ['GET', 'HEAD', 'OPTIONS'].includes(req.method);
-    for (let essai = 0; essai < 4; essai++) {
+    for (let essai = 0; essai < ESSAIS_MAX; essai++) {
+      // Après un conflit, attente aléatoire croissante : des écritures simultanées se départagent
+      // au lieu de se gêner indéfiniment (une rafale de connexions, par exemple).
+      if (essai > 0) await new Promise((r) => setTimeout(r, Math.min(1500, (40 + Math.random() * 120) * essai)));
       try { await charger(essai > 0); } catch (e) {
         console.error('Stockage partagé indisponible :', e.message);
-        // En lecture, l'état local (s'il existe) vaut mieux qu'une erreur ; jamais en écriture.
-        if (!(lecture && db)) return erreur(503, 'La plateforme est momentanément indisponible : réessayez dans un instant.');
+        // Jamais de réponse tirée d'un état local peut-être périmé : un compte ou une session
+        // absents y vaudraient un refus (401) qui déconnecte l'utilisateur à tort.
+        version = -1;
+        return erreur(503, 'La plateforme est momentanément indisponible : réessayez dans un instant.');
       }
       const avant = changements();
       const r = await appeler(req, corps);

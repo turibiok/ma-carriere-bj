@@ -104,3 +104,38 @@ test('des données de démonstration trop anciennes sont semées à nouveau', as
   assert.equal((await b('/api/evenements?statut=PROPOSE', { jeton })).corps.length, 0, 'données neuves : le moteur n\'a pas encore tourné');
   assert.equal((await stockage.lire()).seme_le, new Date().toISOString().slice(0, 10));
 });
+
+// Stockage partagé avec une latence réseau simulée : les écritures concurrentes se chevauchent vraiment.
+function avecLatence(stockage, ms = 15) {
+  const attendre = () => new Promise((r) => setTimeout(r, ms + Math.random() * ms));
+  const s = { panne: false };
+  for (const k of ['version', 'lire', 'lireBlocs', 'ecrireBlocs', 'ecrire']) {
+    s[k] = async (...a) => { await attendre(); if (s.panne) throw new Error('réseau coupé'); return stockage[k](...a); };
+  }
+  return s;
+}
+
+test('une rafale de connexions simultanées sur plusieurs instances aboutit sans erreur', async () => {
+  const commun = stockageMemoire();
+  const instances = await Promise.all([1, 2, 3, 4].map(() => instance(avecLatence(commun))));
+  await instances[0]('/api/comptes-demo'); // sème l'état partagé
+  const comptes = ['DRH-0001', 'RH-0001', 'ADM-0001'];
+  const reponses = await Promise.all(Array.from({ length: 12 }, (_, i) => instances[i % 4]('/api/connexion', {
+    methode: 'POST', corps: { type: 'matricule', identifiant: comptes[i % 3], mot_de_passe: MOT_DE_PASSE_DEMO },
+  })));
+  assert.deepEqual(reponses.map((r) => r.statut), Array(12).fill(200), JSON.stringify(reponses.filter((r) => r.statut !== 200).map((r) => r.corps)));
+  // Chaque session ouverte vaut ensuite sur n'importe quelle instance.
+  for (const [i, r] of reponses.entries()) assert.equal((await instances[(i + 1) % 4]('/api/moi', { jeton: r.corps.jeton })).statut, 200);
+});
+
+test("stockage partagé injoignable : erreur temporaire, jamais une réponse tirée d'un état local périmé", async () => {
+  const commun = stockageMemoire();
+  const lent = avecLatence(commun, 1);
+  const a = await instance(lent);
+  const jeton = await connecter(a, 'DRH-0001');
+  lent.panne = true;
+  const r = await a('/api/moi', { jeton });
+  assert.equal(r.statut, 503, "une panne du stockage se signale ; l'état local pourrait ignorer un compte ou une session récents");
+  lent.panne = false;
+  assert.equal((await a('/api/moi', { jeton })).statut, 200);
+});
